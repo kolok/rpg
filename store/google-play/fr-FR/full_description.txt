@@ -1,0 +1,7 @@
+RPG - fiches de personnage et lancer de dés
+
+Application hors ligne pour gérer les fiches de personnages autour de la table et lancer les dés.
+
+Démarrez une partie (2 à 15 joueurs), remplissez les fiches (PV, PM, caractéristiques, classes, équipement, inventaire) et lancez d4, d6, d8, d10, d12 ou d20. La partie est enregistrée sur l’appareil : rien n’est perdu si l’application est fermée en pleine session.
+
+Aucune connexion internet n’est nécessaire.
