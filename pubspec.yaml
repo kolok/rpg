@@ -92,15 +92,15 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: assets/icone_lancement.png
-  adaptive_icon_background: "#0D0A16"
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: assets/icone_lancement.png
   adaptive_icon_foreground_inset: 0
   remove_alpha_ios: true
-  background_color_ios: "#0D0A16"
+  background_color_ios: "#FFFFFF"
   web:
     generate: true
     image_path: assets/icone_lancement.png
-    background_color: "#0D0A16"
+    background_color: "#FFFFFF"
     theme_color: "#2C3E7B"
   windows:
     generate: true

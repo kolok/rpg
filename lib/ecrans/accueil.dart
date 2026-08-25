@@ -89,8 +89,7 @@ class EcranAccueil extends StatelessWidget {
                     Center(
                       child: Image.asset(
                         'assets/icone.png',
-                        width: 96,
-                        height: 96,
+                        width: 168,
                         filterQuality: FilterQuality.high,
                         excludeFromSemantics: true,
                       ),

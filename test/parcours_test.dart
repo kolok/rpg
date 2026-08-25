@@ -263,7 +263,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // On rouvre la partie depuis la page de garde.
-    await tester.tap(find.text('La couronne d\'ambre'));
+    final partie = find.text('La couronne d\'ambre');
+    await tester.ensureVisible(partie);
+    await tester.pumpAndSettle();
+    await tester.tap(partie);
     await tester.pumpAndSettle();
     expect(find.text('Aria'), findsOneWidget);
   });

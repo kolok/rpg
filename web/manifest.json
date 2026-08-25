@@ -3,7 +3,7 @@
     "short_name": "RPG",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0D0A16",
+    "background_color": "#FFFFFF",
     "theme_color": "#2C3E7B",
     "description": "RPG - fiches de personnage et lancer de dés",
     "orientation": "portrait-primary",
