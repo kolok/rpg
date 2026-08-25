@@ -52,7 +52,7 @@ class EcranFichePersonnage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          // 1. Le nom et les points d'expérience.
+          // 1. Le nom et le niveau.
           SectionFiche(
             titre: 'Identité',
             icone: Icons.badge,
@@ -66,10 +66,10 @@ class EcranFichePersonnage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 CompteurEntier(
-                  libelle: 'Points d\'expérience',
+                  libelle: 'Niveau',
                   icone: Icons.star,
-                  valeur: personnage.experience,
-                  auChangement: (v) => modifier(() => personnage.experience = v),
+                  valeur: personnage.niveau,
+                  auChangement: (v) => modifier(() => personnage.niveau = v),
                 ),
               ],
             ),

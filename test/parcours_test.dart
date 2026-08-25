@@ -296,6 +296,25 @@ void main() {
     expect(find.text('Aria'), findsOneWidget);
   });
 
+  testWidgets('le niveau se lit dans la liste des héros', (tester) async {
+    await demarrerApplication(tester);
+    await creerPartie(tester, joueursEnMoins: 2);
+    // Les fiches neuves partent du niveau 0.
+    expect(find.text('Niv. 0'), findsNWidgets(2));
+
+    await tester.tap(find.text('Personnage 1'));
+    await tester.pumpAndSettle();
+    // Dans l'identité, le nom vient d'abord, le niveau juste après.
+    await tester.enterText(find.byType(TextField).at(1), '7');
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Le niveau s'affiche à droite du nom, sans ouvrir la fiche.
+    expect(find.text('Niv. 7'), findsOneWidget);
+    expect(find.text('Niv. 0'), findsOneWidget);
+  });
+
   testWidgets('supprimer un personnage demande confirmation', (tester) async {
     await demarrerApplication(tester);
     await creerPartie(tester, joueursEnMoins: 2);

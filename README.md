@@ -13,8 +13,8 @@ session.
    enregistrées et bouton *Nouvelle partie*. À la création, on donne un **nom**
    à la partie et on choisit le nombre de joueurs, de 2 à 15 ; une fiche vierge
    est créée pour chacun.
-2. **Liste des héros** — toutes les fiches de la partie, avec un aperçu des PV,
-   PM, PI et points de réussite. Le nom de la partie est affiché en haut, avec les
+2. **Liste des héros** — toutes les fiches de la partie, avec le niveau à
+   droite du nom et un aperçu des PV, PM, PI et points de réussite. Le nom de la partie est affiché en haut, avec les
    boutons *renommer* et *quitter*. En bas de la liste, *Ajouter un
    personnage* crée une fiche vierge et l'ouvre. Bouton *Lancer les dés*.
 3. **Fiche de personnage** — accessible en touchant une ligne de la liste.
@@ -29,7 +29,7 @@ Les rubriques apparaissent dans cet ordre :
 
 | # | Élément | Type |
 | --- | --- | --- |
-| 1 | Nom et points d'expérience | texte libre, entier |
+| 1 | Nom et niveau | texte libre, entier |
 | 2 | Points de réussite | entier |
 | 3 | PV max et PV actuels | deux entiers + jauge |
 | 4 | PM max et PM actuels | deux entiers + jauge |

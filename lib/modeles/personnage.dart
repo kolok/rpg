@@ -50,7 +50,7 @@ class Personnage {
     this.zenits = 0,
     List<String>? equipement,
     List<String>? inventaire,
-    this.experience = 0,
+    this.niveau = 0,
     this.pvMax = 40,
     int? pvActuels,
     this.pmMax = 40,
@@ -77,7 +77,10 @@ class Personnage {
   int zenits;
   List<String> equipement;
   List<String> inventaire;
-  int experience;
+
+  /// Niveau du personnage, autrefois enregistré sous le nom « points
+  /// d'expérience ».
+  int niveau;
 
   /// Réserves : le maximum et ce qu'il en reste actuellement.
   int pvMax;
@@ -102,7 +105,7 @@ class Personnage {
         'zenits': zenits,
         'equipement': equipement,
         'inventaire': inventaire,
-        'experience': experience,
+        'niveau': niveau,
         'pvMax': pvMax,
         'pvActuels': pvActuels,
         'pmMax': pmMax,
@@ -142,7 +145,8 @@ class Personnage {
       zenits: json['zenits'] as int? ?? 0,
       equipement: liste('equipement'),
       inventaire: liste('inventaire'),
-      experience: json['experience'] as int? ?? 0,
+      // Les sauvegardes antérieures au renommage parlaient d'« experience ».
+      niveau: json['niveau'] as int? ?? json['experience'] as int? ?? 0,
       pvMax: pvMax,
       pvActuels: json['pvActuels'] as int? ?? pvMax,
       pmMax: pmMax,

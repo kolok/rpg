@@ -143,13 +143,29 @@ class _CartePersonnage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      personnage.nom.trim().isEmpty
-                          ? 'Sans nom'
-                          : personnage.nom,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    // Le niveau se lit à droite du nom, sans avoir à ouvrir
+                    // la fiche.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            personnage.nom.trim().isEmpty
+                                ? 'Sans nom'
+                                : personnage.nom,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _Pastille(
+                          libelle: 'Niv.',
+                          valeur: '${personnage.niveau}',
+                          couleur: theme.colorScheme.secondary,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(

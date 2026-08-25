@@ -30,7 +30,7 @@ void main() {
       zenits: 250,
       equipement: ['Épée longue'],
       inventaire: ['Potion', 'Corde'],
-      experience: 12,
+      niveau: 12,
       pvMax: 45,
       pvActuels: 38,
       pmMax: 40,
@@ -55,7 +55,7 @@ void main() {
     expect(copie.zenits, 250);
     expect(copie.equipement, ['Épée longue']);
     expect(copie.inventaire, ['Potion', 'Corde']);
-    expect(copie.experience, 12);
+    expect(copie.niveau, 12);
     expect(copie.pvMax, 45);
     expect(copie.pvActuels, 38);
     expect(copie.pmMax, 40);
@@ -77,12 +77,14 @@ void main() {
 
   test('une ancienne sauvegarde est reprise sans rien perdre', () {
     // Format précédent : un seul compteur PV/PM, classes en simples textes,
-    // compétences hors des classes, et l'ancien nom des points de réussite.
+    // compétences hors des classes, et les anciens noms des points de
+    // réussite et du niveau.
     final ancienne = {
       'nom': 'Aria',
       'classes': ['Gardien', 'Élémentaliste'],
       'competences': ['Frappe vigoureuse'],
       'pointsFabula': 4,
+      'experience': 7,
       'pv': 35,
       'pm': 20,
       'zenits': 100,
@@ -99,6 +101,8 @@ void main() {
     expect(copie.pmActuels, 20);
     expect(copie.zenits, 100);
     expect(copie.pointsDeReussite, 4);
+    // Les points d'expérience d'alors sont le niveau d'aujourd'hui.
+    expect(copie.niveau, 7);
     // Les compétences orphelines sont rattachées à la première classe.
     expect(copie.classes.map((c) => c.nom), ['Gardien', 'Élémentaliste']);
     expect(copie.classes[0].competences, ['Frappe vigoureuse']);
