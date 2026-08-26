@@ -44,10 +44,7 @@ class SectionFiche extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: enfant,
-          ),
+          Padding(padding: const EdgeInsets.all(16), child: enfant),
         ],
       ),
     );
@@ -62,6 +59,7 @@ class ChampTexte extends StatefulWidget {
     required this.valeur,
     required this.auChangement,
     this.indication,
+    this.lignes = 1,
   });
 
   final String libelle;
@@ -69,13 +67,18 @@ class ChampTexte extends StatefulWidget {
   final String? indication;
   final ValueChanged<String> auChangement;
 
+  /// Nombre de lignes affichées d'emblée. Au-delà de une, le champ s'étire
+  /// avec le texte : c'est ce qu'il faut pour décrire une compétence.
+  final int lignes;
+
   @override
   State<ChampTexte> createState() => _ChampTexteState();
 }
 
 class _ChampTexteState extends State<ChampTexte> {
-  late final TextEditingController _controleur =
-      TextEditingController(text: widget.valeur);
+  late final TextEditingController _controleur = TextEditingController(
+    text: widget.valeur,
+  );
 
   @override
   void dispose() {
@@ -91,6 +94,9 @@ class _ChampTexteState extends State<ChampTexte> {
         labelText: widget.libelle,
         hintText: widget.indication,
       ),
+      minLines: widget.lignes,
+      maxLines: widget.lignes == 1 ? 1 : null,
+      keyboardType: widget.lignes == 1 ? null : TextInputType.multiline,
       textCapitalization: TextCapitalization.sentences,
       onChanged: widget.auChangement,
     );
@@ -131,8 +137,9 @@ class CompteurEntier extends StatefulWidget {
 }
 
 class _CompteurEntierState extends State<CompteurEntier> {
-  late final TextEditingController _controleur =
-      TextEditingController(text: '${widget.valeur}');
+  late final TextEditingController _controleur = TextEditingController(
+    text: '${widget.valeur}',
+  );
   final FocusNode _focus = FocusNode();
 
   @override
@@ -213,7 +220,8 @@ class _CompteurEntierState extends State<CompteurEntier> {
           children: [
             IconButton.filledTonal(
               visualDensity: VisualDensity.compact,
-              onPressed: widget._tropPetit(widget.valeur - widget.pas) &&
+              onPressed:
+                  widget._tropPetit(widget.valeur - widget.pas) &&
                       widget.valeur == widget.minimum
                   ? null
                   : () => _decaler(-widget.pas),
@@ -402,6 +410,143 @@ class ListeTextes extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Encadré rouge de fin de fiche, isolant l'action irréversible.
+class ZoneDeDanger extends StatelessWidget {
+  const ZoneDeDanger({
+    super.key,
+    required this.explication,
+    required this.libelleBouton,
+    required this.onSupprimer,
+  });
+
+  final String explication;
+  final String libelleBouton;
+  final VoidCallback onSupprimer;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'ZONE DE DANGER',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              explication,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onSupprimer,
+              icon: const Icon(Icons.delete_outline),
+              label: Text(libelleBouton),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.colorScheme.error,
+                side: BorderSide(color: theme.colorScheme.error),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Demande confirmation avant d'effacer une fiche. Renvoie `true` seulement si
+/// le joueur a confirmé.
+Future<bool> confirmerSuppression(
+  BuildContext context, {
+  required String titre,
+  required String message,
+}) async {
+  final confirme = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      final theme = Theme.of(context);
+      return AlertDialog(
+        icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+        title: Text(titre),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      );
+    },
+  );
+  return confirme == true;
+}
+
+/// Étiquette arrondie « libellé valeur » des aperçus de fiches.
+class Pastille extends StatelessWidget {
+  const Pastille({
+    super.key,
+    required this.libelle,
+    required this.valeur,
+    required this.couleur,
+  });
+
+  final String libelle;
+  final String valeur;
+  final Color couleur;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: couleur.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '$libelle $valeur',
+        style: TextStyle(
+          color: couleur,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }

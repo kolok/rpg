@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../modeles/bibliotheque.dart';
+import '../modeles/competence.dart';
 import '../modeles/personnage.dart';
 import '../widgets/champs.dart';
+import '../widgets/competences.dart';
+import 'coulisses.dart';
 import 'des.dart';
 
 /// Écran 3 — fiche détaillée d'un personnage, entièrement modifiable
@@ -16,11 +19,17 @@ class EcranFichePersonnage extends StatelessWidget {
   Future<void> _supprimer(BuildContext context) async {
     final bibliotheque = BibliothequeScope.de(context);
     final navigateur = Navigator.of(context);
-    final confirme = await showDialog<bool>(
-      context: context,
-      builder: (_) => _DialogueSuppression(personnage: personnage),
+    final nom = personnage.nom.trim().isEmpty
+        ? 'cette fiche sans nom'
+        : '« ${personnage.nom.trim()} »';
+    final confirme = await confirmerSuppression(
+      context,
+      titre: 'Supprimer ce personnage ?',
+      message:
+          'La fiche de $nom sera définitivement effacée de la partie. '
+          'Cette action est irréversible.',
     );
-    if (confirme != true) return;
+    if (!confirme) return;
     bibliotheque.supprimerPersonnage(personnage);
     navigateur.pop();
   }
@@ -36,15 +45,13 @@ class EcranFichePersonnage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          personnage.nom.trim().isEmpty ? 'Fiche' : personnage.nom,
-        ),
+        title: Text(personnage.nom.trim().isEmpty ? 'Fiche' : personnage.nom),
         actions: [
           IconButton(
             tooltip: 'Lancer les dés',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EcranDes()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const EcranDes())),
             icon: const Icon(Icons.casino),
           ),
         ],
@@ -173,7 +180,8 @@ class EcranFichePersonnage extends StatelessWidget {
                   // Pas de plancher : les malus d'armure descendent sous zéro.
                   minimum: null,
                   valeur: personnage.initiative,
-                  auChangement: (v) => modifier(() => personnage.initiative = v),
+                  auChangement: (v) =>
+                      modifier(() => personnage.initiative = v),
                 ),
               ],
             ),
@@ -274,109 +282,15 @@ class EcranFichePersonnage extends StatelessWidget {
           const SizedBox(height: 32),
 
           // 14. La zone de danger, tout en bas : on n'y arrive pas par hasard.
-          _ZoneDeDanger(onSupprimer: () => _supprimer(context)),
+          ZoneDeDanger(
+            explication:
+                'Retirer ce personnage de la partie efface sa fiche pour de '
+                'bon. Les autres fiches ne sont pas touchées.',
+            libelleBouton: 'Supprimer ce personnage',
+            onSupprimer: () => _supprimer(context),
+          ),
         ],
       ),
-    );
-  }
-}
-
-/// Encadré rouge de fin de fiche, isolant l'action irréversible.
-class _ZoneDeDanger extends StatelessWidget {
-  const _ZoneDeDanger({required this.onSupprimer});
-
-  final VoidCallback onSupprimer;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 18,
-                  color: theme.colorScheme.error,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'ZONE DE DANGER',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    letterSpacing: 1.1,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Retirer ce personnage de la partie efface sa fiche pour de '
-              'bon. Les autres fiches ne sont pas touchées.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: onSupprimer,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Supprimer ce personnage'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
-                side: BorderSide(color: theme.colorScheme.error),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Confirmation avant de supprimer une fiche.
-class _DialogueSuppression extends StatelessWidget {
-  const _DialogueSuppression({required this.personnage});
-
-  final Personnage personnage;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final nom = personnage.nom.trim().isEmpty
-        ? 'cette fiche sans nom'
-        : '« ${personnage.nom.trim()} »';
-    return AlertDialog(
-      icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-      title: const Text('Supprimer ce personnage ?'),
-      content: Text(
-        'La fiche de $nom sera définitivement effacée de la partie. '
-        'Cette action est irréversible.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Annuler'),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: theme.colorScheme.error,
-            foregroundColor: theme.colorScheme.onError,
-          ),
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Supprimer'),
-        ),
-      ],
     );
   }
 }
@@ -395,6 +309,35 @@ class _CarteClasse extends StatelessWidget {
   final int numero;
   final void Function(void Function()) auChangement;
   final VoidCallback auSuppression;
+
+  /// Reprend une classe des coulisses : son nom passe sur la fiche, et le
+  /// lien retenu sert à proposer ensuite ses compétences.
+  Future<void> _reprendreClasse(BuildContext context) async {
+    final modele = await choisirClasseCoulisses(context);
+    if (modele == null) return;
+    auChangement(() {
+      classe.nom = modele.nom;
+      classe.modeleId = modele.id;
+    });
+  }
+
+  /// Ajoute à la fiche une compétence puisée dans la classe des coulisses.
+  Future<void> _reprendreCompetence(BuildContext context) async {
+    final bibliotheque = BibliothequeScope.de(context);
+    final modele = bibliotheque.classeCoulisses(classe.modeleId);
+    if (modele == null) {
+      // Sans classe reprise des coulisses, on ne sait pas où puiser.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Choisissez d\'abord la classe dans les coulisses.'),
+        ),
+      );
+      return;
+    }
+    final competence = await choisirCompetenceCoulisses(context, modele);
+    if (competence == null) return;
+    auChangement(() => classe.competences.add(competence));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -418,17 +361,57 @@ class _CarteClasse extends StatelessWidget {
             indication: 'Ex. : Gardien, Élémentaliste…',
             auChangement: (v) => auChangement(() => classe.nom = v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => _reprendreClasse(context),
+              icon: const Icon(Icons.workspace_premium, size: 18),
+              label: const Text('Reprendre une classe des coulisses'),
+            ),
+          ),
+          const SizedBox(height: 20),
           Text(
             'Compétences de cette classe',
             style: theme.textTheme.labelMedium,
           ),
           const SizedBox(height: 8),
-          ListeTextes(
-            valeurs: classe.competences,
-            indication: 'Ex. : Frappe vigoureuse (niv. 2)…',
-            messageVide: 'Aucune compétence pour cette classe.',
-            auChangement: (v) => auChangement(() => classe.competences = v),
+          if (classe.competences.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Aucune compétence pour cette classe.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          for (var i = 0; i < classe.competences.length; i++)
+            CarteCompetence(
+              // La clé lie la carte à sa position dans la liste.
+              key: ValueKey('competence-$i-${classe.competences.length}'),
+              competence: classe.competences[i],
+              libelle: 'Compétence ${i + 1}',
+              auChangement: auChangement,
+              auSuppression: () =>
+                  auChangement(() => classe.competences.removeAt(i)),
+            ),
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: () =>
+                    auChangement(() => classe.competences.add(Competence())),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Ajouter'),
+              ),
+              TextButton.icon(
+                onPressed: () => _reprendreCompetence(context),
+                icon: const Icon(Icons.workspace_premium, size: 18),
+                label: const Text('Depuis les coulisses'),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,6 +1,8 @@
 /// Modèle de données d'une fiche de personnage RPG.
 library;
 
+import 'competence.dart';
+
 /// Les quatre caractéristiques du jeu. Chacune est associée à un dé.
 enum Caracteristique {
   puissance('Puissance'),
@@ -22,24 +24,27 @@ const int classesParDefaut = 3;
 
 /// Une classe du personnage et les compétences qui lui sont associées.
 class Classe {
-  Classe({this.nom = '', List<String>? competences})
-      : competences = competences ?? <String>[];
+  Classe({this.nom = '', List<Competence>? competences, this.modeleId})
+    : competences = competences ?? <Competence>[];
 
   String nom;
-  List<String> competences;
+  List<Competence> competences;
+
+  /// Identifiant de la classe des coulisses d'où celle-ci a été reprise, s'il
+  /// y en a une : c'est là qu'on va chercher les compétences à proposer.
+  String? modeleId;
 
   Map<String, dynamic> versJson() => {
-        'nom': nom,
-        'competences': competences,
-      };
+    'nom': nom,
+    'competences': competences.map((c) => c.versJson()).toList(),
+    'modeleId': modeleId,
+  };
 
   factory Classe.depuisJson(Map<String, dynamic> json) => Classe(
-        nom: json['nom'] as String? ?? '',
-        competences: (json['competences'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            <String>[],
-      );
+    nom: json['nom'] as String? ?? '',
+    competences: Competence.listeDepuisJson(json['competences']),
+    modeleId: json['modeleId'] as String?,
+  );
 }
 
 class Personnage {
@@ -61,15 +66,15 @@ class Personnage {
     this.defenseMagique = 0,
     this.initiative = 0,
     Map<Caracteristique, int>? caracteristiques,
-  })  : classes = classes ?? List.generate(classesParDefaut, (_) => Classe()),
-        equipement = equipement ?? <String>[],
-        inventaire = inventaire ?? <String>[],
-        // Une fiche neuve démarre avec ses réserves pleines.
-        pvActuels = pvActuels ?? pvMax,
-        pmActuels = pmActuels ?? pmMax,
-        piActuels = piActuels ?? piMax,
-        caracteristiques = caracteristiques ??
-            {for (final c in Caracteristique.values) c: 8};
+  }) : classes = classes ?? List.generate(classesParDefaut, (_) => Classe()),
+       equipement = equipement ?? <String>[],
+       inventaire = inventaire ?? <String>[],
+       // Une fiche neuve démarre avec ses réserves pleines.
+       pvActuels = pvActuels ?? pvMax,
+       pmActuels = pmActuels ?? pmMax,
+       piActuels = piActuels ?? piMax,
+       caracteristiques =
+           caracteristiques ?? {for (final c in Caracteristique.values) c: 8};
 
   String nom;
   List<Classe> classes;
@@ -99,27 +104,27 @@ class Personnage {
   Map<Caracteristique, int> caracteristiques;
 
   Map<String, dynamic> versJson() => {
-        'nom': nom,
-        'classes': classes.map((c) => c.versJson()).toList(),
-        'pointsDeReussite': pointsDeReussite,
-        'zenits': zenits,
-        'equipement': equipement,
-        'inventaire': inventaire,
-        'niveau': niveau,
-        'pvMax': pvMax,
-        'pvActuels': pvActuels,
-        'pmMax': pmMax,
-        'pmActuels': pmActuels,
-        'piMax': piMax,
-        'piActuels': piActuels,
-        'defense': defense,
-        'defenseMagique': defenseMagique,
-        'initiative': initiative,
-        'caracteristiques': {
-          for (final entree in caracteristiques.entries)
-            entree.key.name: entree.value,
-        },
-      };
+    'nom': nom,
+    'classes': classes.map((c) => c.versJson()).toList(),
+    'pointsDeReussite': pointsDeReussite,
+    'zenits': zenits,
+    'equipement': equipement,
+    'inventaire': inventaire,
+    'niveau': niveau,
+    'pvMax': pvMax,
+    'pvActuels': pvActuels,
+    'pmMax': pmMax,
+    'pmActuels': pmActuels,
+    'piMax': piMax,
+    'piActuels': piActuels,
+    'defense': defense,
+    'defenseMagique': defenseMagique,
+    'initiative': initiative,
+    'caracteristiques': {
+      for (final entree in caracteristiques.entries)
+        entree.key.name: entree.value,
+    },
+  };
 
   factory Personnage.depuisJson(Map<String, dynamic> json) {
     List<String> liste(String cle) =>
@@ -139,9 +144,8 @@ class Personnage {
       nom: json['nom'] as String? ?? '',
       classes: classes,
       // TODO: supprimer la référence à pointsFabula gardée ici pour la rétrocompatibilité.
-      pointsDeReussite: json['pointsDeReussite'] as int? ??
-          json['pointsFabula'] as int? ??
-          3,
+      pointsDeReussite:
+          json['pointsDeReussite'] as int? ?? json['pointsFabula'] as int? ?? 3,
       zenits: json['zenits'] as int? ?? 0,
       equipement: liste('equipement'),
       inventaire: liste('inventaire'),
@@ -175,9 +179,10 @@ class Personnage {
           Classe(nom: element.toString()),
     ];
 
-    final anciennesCompetences =
-        (json['competences'] as List?)?.map((e) => e.toString()).toList();
-    if (anciennesCompetences != null && anciennesCompetences.isNotEmpty) {
+    final anciennesCompetences = Competence.listeDepuisJson(
+      json['competences'],
+    );
+    if (anciennesCompetences.isNotEmpty) {
       if (classes.isEmpty) classes.add(Classe());
       classes.first.competences.addAll(anciennesCompetences);
     }
