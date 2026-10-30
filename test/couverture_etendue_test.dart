@@ -50,11 +50,7 @@ void main() {
   /// défiler la liste avant de taper, sinon le centre du bouton sort de l'écran.
   Future<void> ouvrirDialogueNouvellePartie(WidgetTester tester) async {
     final bouton = find.text('Démarrer la partie');
-    await tester.scrollUntilVisible(
-      bouton,
-      120,
-      scrollable: defilement,
-    );
+    await tester.scrollUntilVisible(bouton, 120, scrollable: defilement);
     await tester.pumpAndSettle();
     await tester.tap(bouton);
     await tester.pumpAndSettle();
@@ -63,11 +59,7 @@ void main() {
 
   Future<void> ouvrirCoulisses(WidgetTester tester) async {
     final bouton = find.text('Coulisses');
-    await tester.scrollUntilVisible(
-      bouton,
-      120,
-      scrollable: defilement,
-    );
+    await tester.scrollUntilVisible(bouton, 120, scrollable: defilement);
     await tester.pumpAndSettle();
     await tester.tap(bouton);
     await tester.pumpAndSettle();
@@ -112,24 +104,28 @@ void main() {
     expect(find.text('Vos parties'), findsNothing);
   });
 
-  testWidgets('le dialogue de nouvelle partie accepte le slider et l\'annulation',
-      (tester) async {
-    await demarrer(tester);
-    await ouvrirDialogueNouvellePartie(tester);
+  testWidgets(
+    'le dialogue de nouvelle partie accepte le slider et l\'annulation',
+    (tester) async {
+      await demarrer(tester);
+      await ouvrirDialogueNouvellePartie(tester);
 
-    final dialogue = find.byType(AlertDialog);
-    await tester.drag(
-      find.descendant(of: dialogue, matching: find.byType(Slider)),
-      const Offset(80, 0),
-    );
-    await tester.pumpAndSettle();
+      final dialogue = find.byType(AlertDialog);
+      await tester.drag(
+        find.descendant(of: dialogue, matching: find.byType(Slider)),
+        const Offset(80, 0),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Annuler'));
-    await tester.pumpAndSettle();
-    expect(find.text('Personnage 1'), findsNothing);
-  });
+      await tester.tap(find.text('Annuler'));
+      await tester.pumpAndSettle();
+      expect(find.text('Personnage 1'), findsNothing);
+    },
+  );
 
-  testWidgets('ouvrir une classe depuis la liste des coulisses', (tester) async {
+  testWidgets('ouvrir une classe depuis la liste des coulisses', (
+    tester,
+  ) async {
     final bibliotheque = await demarrer(tester);
     final gardien = bibliotheque.ajouterClasseCoulisses();
     bibliotheque.modifierCoulisses(() {
@@ -200,7 +196,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Annuler'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Aucune classe sur cette fiche'), findsOneWidget);
+    expect(
+      find.textContaining('Aucune classe sur cette fiche'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('retirer des dés et tout effacer', (tester) async {
@@ -307,43 +306,39 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('une classe des coulisses sans compétence affiche le message vide',
-      (tester) async {
-    final bibliotheque = await demarrer(tester);
-    final vide = bibliotheque.ajouterClasseCoulisses();
-    bibliotheque.modifierCoulisses(() {
-      vide.nom = 'Vide';
-      vide.competences.clear();
-    });
-    await tester.pumpWidget(ApplicationRpg(bibliotheque: bibliotheque));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'une classe des coulisses sans compétence affiche le message vide',
+    (tester) async {
+      final bibliotheque = await demarrer(tester);
+      final vide = bibliotheque.ajouterClasseCoulisses();
+      bibliotheque.modifierCoulisses(() {
+        vide.nom = 'Vide';
+        vide.competences.clear();
+      });
+      await tester.pumpWidget(ApplicationRpg(bibliotheque: bibliotheque));
+      await tester.pumpAndSettle();
 
-    await ouvrirCoulisses(tester);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Vide'));
-    await tester.pumpAndSettle();
+      await ouvrirCoulisses(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Vide'));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.text('Aucune compétence pour cette classe.'),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining('Les sorts sont facultatifs'),
-      findsOneWidget,
-    );
+      expect(find.text('Aucune compétence pour cette classe.'), findsOneWidget);
+      expect(find.textContaining('Les sorts sont facultatifs'), findsOneWidget);
 
-    await tester.tap(find.text('Ajouter une compétence'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Ajouter une compétence'));
+      await tester.pumpAndSettle();
 
-    final ajouterSort = find.text('Ajouter un sort');
-    await defilerJusqua(tester, ajouterSort);
-    await tester.tap(ajouterSort);
-    await tester.pumpAndSettle();
+      final ajouterSort = find.text('Ajouter un sort');
+      await defilerJusqua(tester, ajouterSort);
+      await tester.tap(ajouterSort);
+      await tester.pumpAndSettle();
 
-    final supprimerSort = find.byTooltip('Supprimer ce sort');
-    await defilerJusqua(tester, supprimerSort);
-    await tester.tap(supprimerSort);
-    await tester.pumpAndSettle();
-    expect(find.text('0/10'), findsOneWidget);
-  });
+      final supprimerSort = find.byTooltip('Supprimer ce sort');
+      await defilerJusqua(tester, supprimerSort);
+      await tester.tap(supprimerSort);
+      await tester.pumpAndSettle();
+      expect(find.text('0/10'), findsOneWidget);
+    },
+  );
 }
