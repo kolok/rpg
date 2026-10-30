@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../modeles/bibliotheque.dart';
 import '../modeles/competence.dart';
+import '../modeles/modele_classe.dart';
 import '../modeles/personnage.dart';
 import '../widgets/champs.dart';
 import '../widgets/competences.dart';
@@ -32,6 +33,54 @@ class EcranFichePersonnage extends StatelessWidget {
     if (!confirme) return;
     bibliotheque.supprimerPersonnage(personnage);
     navigateur.pop();
+  }
+
+  /// Demande d'où vient la nouvelle classe : des coulisses, ou de rien.
+  Future<void> _ajouterClasse(BuildContext context) async {
+    final bibliotheque = BibliothequeScope.de(context);
+    final depuisCoulisses = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ajouter une classe'),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.workspace_premium),
+              title: const Text('Copier une classe des coulisses'),
+              subtitle: const Text(
+                'Son nom et ses compétences, chacune au NC 0.',
+              ),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+            ListTile(
+              leading: const Icon(Icons.note_add_outlined),
+              title: const Text('Créer une classe vierge'),
+              subtitle: const Text('À écrire directement sur la fiche.'),
+              onTap: () => Navigator.of(context).pop(false),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+        ],
+      ),
+    );
+    if (depuisCoulisses == null) return;
+    if (!depuisCoulisses) {
+      bibliotheque.modifier(() => personnage.classes.add(Classe()));
+      return;
+    }
+    if (!context.mounted) return;
+    final modele = await choisirClasseCoulisses(context);
+    if (modele == null) return;
+    bibliotheque.modifier(
+      () => personnage.classes.add(Classe.depuisModele(modele)),
+    );
   }
 
   @override
@@ -215,7 +264,22 @@ class EcranFichePersonnage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 8, 9, 10. Chaque classe avec les compétences qui lui sont associées.
+          // 8. Les classes du personnage, avec leurs compétences. Une fiche
+          // neuve n'en a aucune : le message dit où commencer.
+          if (personnage.classes.isEmpty) ...[
+            SectionFiche(
+              titre: 'Classes',
+              icone: Icons.workspace_premium,
+              enfant: Text(
+                'Aucune classe sur cette fiche. Ajoutez-en une pour lui '
+                'associer des compétences.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           for (var i = 0; i < personnage.classes.length; i++) ...[
             _CarteClasse(
               key: ValueKey('classe-$i-${personnage.classes.length}'),
@@ -228,7 +292,7 @@ class EcranFichePersonnage extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           OutlinedButton.icon(
-            onPressed: () => modifier(() => personnage.classes.add(Classe())),
+            onPressed: () => _ajouterClasse(context),
             icon: const Icon(Icons.add),
             label: const Text('Ajouter une classe'),
           ),
@@ -310,38 +374,28 @@ class _CarteClasse extends StatelessWidget {
   final void Function(void Function()) auChangement;
   final VoidCallback auSuppression;
 
-  /// Reprend une classe des coulisses : son nom passe sur la fiche, et le
-  /// lien retenu sert à proposer ensuite ses compétences.
-  Future<void> _reprendreClasse(BuildContext context) async {
-    final modele = await choisirClasseCoulisses(context);
-    if (modele == null) return;
-    auChangement(() {
-      classe.nom = modele.nom;
-      classe.modeleId = modele.id;
-    });
-  }
-
-  /// Ajoute à la fiche une compétence puisée dans la classe des coulisses.
-  Future<void> _reprendreCompetence(BuildContext context) async {
-    final bibliotheque = BibliothequeScope.de(context);
-    final modele = bibliotheque.classeCoulisses(classe.modeleId);
-    if (modele == null) {
-      // Sans classe reprise des coulisses, on ne sait pas où puiser.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Choisissez d\'abord la classe dans les coulisses.'),
-        ),
-      );
-      return;
-    }
-    final competence = await choisirCompetenceCoulisses(context, modele);
-    if (competence == null) return;
-    auChangement(() => classe.competences.add(competence));
-  }
+  /// Texte en retrait, pour les rubriques encore vides.
+  Widget _messageVide(ThemeData theme, String texte) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      texte,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontStyle: FontStyle.italic,
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Trait discret entre deux compétences, pour qu'on les distingue d'un
+    // coup d'œil sans alourdir la fiche.
+    final separateur = Divider(
+      height: 1,
+      thickness: 0.5,
+      color: theme.colorScheme.outlineVariant,
+    );
 
     return SectionFiche(
       titre: classe.nom.trim().isEmpty ? 'Classe $numero' : classe.nom,
@@ -361,35 +415,18 @@ class _CarteClasse extends StatelessWidget {
             indication: 'Ex. : Gardien, Élémentaliste…',
             auChangement: (v) => auChangement(() => classe.nom = v),
           ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () => _reprendreClasse(context),
-              icon: const Icon(Icons.workspace_premium, size: 18),
-              label: const Text('Reprendre une classe des coulisses'),
-            ),
-          ),
           const SizedBox(height: 20),
           Text(
             'Compétences de cette classe',
             style: theme.textTheme.labelMedium,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           if (classe.competences.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Aucune compétence pour cette classe.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          for (var i = 0; i < classe.competences.length; i++)
-            CarteCompetence(
-              // La clé lie la carte à sa position dans la liste.
+            _messageVide(theme, 'Aucune compétence pour cette classe.'),
+          for (var i = 0; i < classe.competences.length; i++) ...[
+            if (i > 0) separateur,
+            LigneCompetenceFiche(
+              // La clé lie la ligne à sa position dans la liste.
               key: ValueKey('competence-$i-${classe.competences.length}'),
               competence: classe.competences[i],
               libelle: 'Compétence ${i + 1}',
@@ -397,21 +434,41 @@ class _CarteClasse extends StatelessWidget {
               auSuppression: () =>
                   auChangement(() => classe.competences.removeAt(i)),
             ),
-          Wrap(
-            spacing: 8,
-            children: [
-              TextButton.icon(
-                onPressed: () =>
-                    auChangement(() => classe.competences.add(Competence())),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Ajouter'),
-              ),
-              TextButton.icon(
-                onPressed: () => _reprendreCompetence(context),
-                icon: const Icon(Icons.workspace_premium, size: 18),
-                label: const Text('Depuis les coulisses'),
-              ),
-            ],
+          ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () =>
+                  auChangement(() => classe.competences.add(Competence())),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Ajouter une compétence'),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Les sorts ne suivent jamais la classe recopiée : le personnage
+          // n'apprend que ceux qu'on lui ajoute ici.
+          Text('Sorts de cette classe', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 8),
+          if (classe.sorts.isEmpty)
+            _messageVide(theme, 'Aucun sort appris dans cette classe.'),
+          for (var i = 0; i < classe.sorts.length; i++)
+            CarteSort(
+              key: ValueKey('sort-$i-${classe.sorts.length}'),
+              sort: classe.sorts[i],
+              libelle: 'Sort ${i + 1}',
+              auChangement: auChangement,
+              auSuppression: () => auChangement(() => classe.sorts.removeAt(i)),
+            ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              // Comme dans les coulisses, dix sorts au plus par classe.
+              onPressed: classe.sorts.length >= sortsMaximum
+                  ? null
+                  : () => auChangement(() => classe.sorts.add(Sort())),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Ajouter un sort'),
+            ),
           ),
         ],
       ),

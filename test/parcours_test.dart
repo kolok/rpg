@@ -87,6 +87,30 @@ void main() {
     expect(find.text('Personnage 4'), findsNothing);
   });
 
+  testWidgets('une fiche neuve annonce qu\'elle n\'a aucune classe', (
+    tester,
+  ) async {
+    await demarrerApplication(tester);
+    await creerPartie(tester);
+
+    await tester.tap(find.text('Personnage 1'));
+    await tester.pumpAndSettle();
+
+    final message = find.textContaining('Aucune classe sur cette fiche');
+    await defilerJusqua(tester, message);
+    expect(find.text('Classe 1'), findsNothing);
+
+    // Le bouton d'ajout demande d'abord d'où vient la classe.
+    await tester.tap(find.text('Ajouter une classe'));
+    await tester.pumpAndSettle();
+    expect(find.text('Copier une classe des coulisses'), findsOneWidget);
+    await tester.tap(find.text('Créer une classe vierge'));
+    await tester.pumpAndSettle();
+
+    expect(message, findsNothing);
+    expect(find.widgetWithText(TextField, 'Classe 1'), findsOneWidget);
+  });
+
   testWidgets('modifier une fiche puis revenir à la liste', (tester) async {
     await demarrerApplication(tester);
     await creerPartie(tester);
@@ -104,13 +128,21 @@ void main() {
     await tester.tap(de12.first);
     await tester.pumpAndSettle();
 
+    // La fiche est vierge : il faut d'abord créer une classe.
+    final ajouterClasse = find.text('Ajouter une classe');
+    await defilerJusqua(tester, ajouterClasse);
+    await tester.tap(ajouterClasse);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Créer une classe vierge'));
+    await tester.pumpAndSettle();
+
     // Nommer la première classe, puis lui associer une compétence.
     final champClasse = find.widgetWithText(TextField, 'Classe 1');
     await defilerJusqua(tester, champClasse);
     await tester.enterText(champClasse, 'Gardien');
     await tester.pumpAndSettle();
 
-    final ajouterCompetence = find.text('Ajouter');
+    final ajouterCompetence = find.text('Ajouter une compétence');
     await defilerJusqua(tester, ajouterCompetence);
     await tester.tap(ajouterCompetence.first);
     await tester.pumpAndSettle();

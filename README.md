@@ -47,7 +47,7 @@ Les rubriques apparaissent dans cet ordre :
 | 5 | PI max et PI actuels | deux entiers + jauge |
 | 6 | Défense, défense magique, initiative | entiers (**l'initiative peut être négative**) |
 | 7 | Puissance, Dextérité, Volonté, Intuition | un dé au choix : d6, d8, d10 ou d12 |
-| 8… | Classes | chaque classe a son nom **et ses propres compétences**, chacune avec sa description et son **NC** |
+| 8… | Classes | aucune au départ ; chaque classe ajoutée a son nom, **ses compétences** (nom et NC) et **ses sorts** |
 | | Équipement | liste de textes libres |
 | | Inventaire | liste de textes libres, sans limite |
 | | Zénits | entier (pas de 10) |
@@ -55,16 +55,29 @@ Les rubriques apparaissent dans cet ordre :
 Les *max* sont le plafond du personnage ; les *actuels* sont ce qu'il perd et
 récupère en jeu. La jauge montre où il en est.
 
-Une fiche vierge comporte trois classes, chacune avec sa liste de compétences.
-On peut en supprimer ou en ajouter d'autres.
+Une fiche vierge **n'a aucune classe** : elle l'annonce et invite à en ajouter
+une. *Ajouter une classe* demande alors d'où elle vient :
 
-Chaque compétence porte un **NC** (niveau de compétence), réglé au − / + comme
-les autres compteurs, et une description. Deux boutons évitent de tout retaper :
-*Reprendre une classe des coulisses* remplit le nom de la classe, puis *Depuis
-les coulisses* propose les compétences de cette même classe — sa compétence
-héroïque comprise. Ce qui est repris est une **copie** : la retoucher sur la
-fiche ne modifie pas les coulisses, et le NC repart de zéro, puisque c'est
-celui du personnage et non celui du modèle.
+- **Copier une classe des coulisses** — son nom et toutes ses compétences
+  nommées, compétence héroïque comprise, arrivent sur la fiche. Chacune démarre
+  au **NC 0**, et les **sorts ne suivent pas** : on ajoute à la main ceux que le
+  personnage apprend.
+- **Créer une classe vierge** — tout est à écrire sur la fiche.
+
+La fiche ne reçoit qu'une **copie** : la retoucher ne modifie pas les
+coulisses. C'est au moment de l'ajout que la copie se fait ; ensuite, la classe
+vit sur la fiche, et *Ajouter une compétence* en pose une de plus, à écrire à
+la main.
+
+Sur la fiche, une compétence tient en **deux lignes** — son nom, puis son
+**NC** — séparées de la suivante par un trait discret. Sa description reste
+dans les coulisses : en pleine partie, seul le niveau se manipule. Le NC écrit
+dans les coulisses est le **plafond** de la compétence : la fiche affiche
+« 2 / 5 » et le bouton + s'arrête à 5. Sans plafond écrit là-bas, le compteur
+monte librement.
+
+Chaque classe de la fiche a aussi ses **sorts**, dix au plus, ajoutés un par un
+avec leur description.
 
 On peut **ajouter ou retirer des personnages** à tout moment, même une partie
 bien entamée : le bouton d'ajout est au bas de la liste des héros, et la
@@ -86,9 +99,12 @@ Une page de classe se présente ainsi :
 | --- | --- | --- |
 | 1 | Nom de la classe | texte libre |
 | 2 | Atouts gratuits | liste de textes libres |
-| 3 | Compétences | nom, **NC** et description — cinq à remplir sur une page neuve, à ajouter ou retirer librement |
+| 3 | Compétences | nom, **NC max** et description — cinq à remplir sur une page neuve, à ajouter ou retirer librement |
 | 4 | Sorts | nom et description, **facultatifs**, jusqu'à dix |
 | 5 | Compétence héroïque | présentée exactement comme une compétence ordinaire |
+
+Le NC saisi ici est le **niveau maximum** de la compétence, pas un niveau
+acquis : c'est le plafond que les fiches de personnages reprennent.
 
 Supprimer une classe des coulisses efface sa page, derrière la **zone de
 danger** habituelle ; les fiches de personnages gardent ce qui y a déjà été
@@ -147,7 +163,24 @@ flutter run              # sur un appareil ou un émulateur connecté
 flutter test             # tests unitaires + parcours des écrans
 flutter analyze
 flutter build apk        # Android
+flutter build appbundle  # Android, bundle signé pour Google Play
 flutter build ios        # iOS
+```
+
+### Publication Google Play
+
+La signature de release utilise la même clé d’upload que
+`counter_mobile_app` : `android/key.properties` (non versionné) pointe vers
+`~/upload-keystore.jks`. Un modèle se trouve dans
+`android/key.properties.example`.
+
+Le dossier à coller dans la Play Console — textes, visuels, questionnaires
+et politique de confidentialité — est décrit dans
+[`store/fiche-play.md`](store/fiche-play.md).
+
+```bash
+flutter build appbundle --release
+# → build/app/outputs/bundle/release/app-release.aab
 ```
 
 ### Organisation du code
@@ -158,7 +191,8 @@ lib/
   theme.dart                   palette encre bleu nuit & Material 3
   modeles/
     personnage.dart            la fiche et sa sérialisation JSON
-    competence.dart            compétences (nom, NC, description) et sorts
+    competence.dart            compétences (nom, NC, plafond, description)
+                               et sorts
     modele_classe.dart         une classe enregistrée dans les coulisses
     monstre.dart               la fiche de monstre du meneur de jeu
     partie.dart                une partie : nom, date, fiches, monstres
@@ -176,7 +210,7 @@ lib/
   widgets/
     champs.dart                sections, champs texte, compteurs, listes,
                                pastilles et zone de danger
-    competences.dart           cartes de compétence (avec NC) et de sort
+    competences.dart           compétences (coulisses et fiche) et sorts
     forme_de.dart              silhouettes des dés (triangle, losange…)
 ```
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../modeles/bibliotheque.dart';
-import '../modeles/competence.dart';
 import '../modeles/modele_classe.dart';
 import 'fiche_classe.dart';
 
@@ -126,56 +125,16 @@ Future<ModeleClasse?> choisirClasseCoulisses(BuildContext context) {
   );
 }
 
-/// Propose les compétences de [classe], compétence héroïque comprise, et
-/// renvoie une copie de celle qui a été choisie.
-Future<Competence?> choisirCompetenceCoulisses(
-  BuildContext context,
-  ModeleClasse classe,
-) async {
-  bool nommee(Competence c) => c.nom.trim().isNotEmpty;
-  final heroique = classe.competenceHeroique;
-
-  final choisie = await showDialog<Competence>(
-    context: context,
-    builder: (context) => _DialogueChoix(
-      titre: 'Compétences de ${classe.nomAffiche}',
-      messageVide:
-          'Cette classe n\'a encore aucune compétence nommée dans les '
-          'coulisses.',
-      lignes: [
-        for (final competence in classe.competences.where(nommee))
-          _LigneChoix(
-            titre: competence.nom.trim(),
-            sousTitre: competence.description.trim(),
-            valeur: competence,
-          ),
-        if (nommee(heroique))
-          _LigneChoix(
-            titre: heroique.nom.trim(),
-            sousTitre: 'Compétence héroïque',
-            valeur: heroique,
-            icone: Icons.military_tech,
-          ),
-      ],
-    ),
-  );
-  // La fiche reçoit une copie : modifier la compétence du personnage ne
-  // récrit pas celle des coulisses.
-  return choisie?.pourFiche();
-}
-
 class _LigneChoix<T> {
   const _LigneChoix({
     required this.titre,
     required this.valeur,
     this.sousTitre = '',
-    this.icone,
   });
 
   final String titre;
   final String sousTitre;
   final T valeur;
-  final IconData? icone;
 }
 
 /// Liste de choix puisée dans les coulisses.
@@ -205,7 +164,7 @@ class _DialogueChoix<T> extends StatelessWidget {
                   for (final ligne in lignes)
                     ListTile(
                       leading: Icon(
-                        ligne.icone ?? Icons.workspace_premium,
+                        Icons.workspace_premium,
                         color: theme.colorScheme.primary,
                       ),
                       title: Text(ligne.titre),

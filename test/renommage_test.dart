@@ -44,7 +44,12 @@ void main() {
   testWidgets('renommer depuis la partie ouverte', (tester) async {
     final bibliotheque = await demarrer(tester);
 
-    await tester.tap(find.text('La couronne d\'ambre'));
+    // La page de garde s'étant allongée, la carte de la partie peut tomber
+    // sous le bas de l'écran : on l'y ramène avant de la toucher.
+    final partie = find.text('La couronne d\'ambre');
+    await tester.ensureVisible(partie);
+    await tester.pumpAndSettle();
+    await tester.tap(partie);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Renommer la partie'));
     await tester.pumpAndSettle();

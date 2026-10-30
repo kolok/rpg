@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import '../modeles/competence.dart';
 import 'champs.dart';
 
-/// Une compétence éditable : son nom, son niveau de compétence (NC) et sa
-/// description.
+/// Une compétence des coulisses : son nom, son NC maximum et sa description.
 ///
-/// La même carte sert sur la fiche de personnage et dans les coulisses, pour
-/// qu'une compétence se présente partout de la même façon — la compétence
-/// héroïque comprise.
+/// Le NC saisi ici est le **plafond** de la compétence ; sur la fiche d'un
+/// personnage, c'est [LigneCompetenceFiche] qui montre où il en est.
 class CarteCompetence extends StatelessWidget {
   const CarteCompetence({
     super.key,
@@ -54,13 +52,13 @@ class CarteCompetence extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Le NC se lit à côté du nom de la compétence.
+              // Le NC maximum se lit à côté du nom de la compétence.
               SizedBox(
-                width: 118,
+                width: 126,
                 child: CompteurEntier(
-                  libelle: 'NC',
-                  valeur: competence.nc,
-                  auChangement: (v) => auChangement(() => competence.nc = v),
+                  libelle: 'NC max',
+                  valeur: competence.ncMax,
+                  auChangement: (v) => auChangement(() => competence.ncMax = v),
                 ),
               ),
               if (auSuppression != null)
@@ -81,6 +79,71 @@ class CarteCompetence extends StatelessWidget {
             indication: 'Ce que fait la compétence…',
             lignes: 2,
             auChangement: (v) => auChangement(() => competence.description = v),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Une compétence sur la fiche d'un personnage, en deux lignes : son nom,
+/// puis son niveau de compétence.
+///
+/// La description reste dans les coulisses : en pleine partie, seul le niveau
+/// se manipule.
+class LigneCompetenceFiche extends StatelessWidget {
+  const LigneCompetenceFiche({
+    super.key,
+    required this.competence,
+    required this.libelle,
+    required this.auChangement,
+    required this.auSuppression,
+  });
+
+  final Competence competence;
+  final String libelle;
+  final void Function(void Function()) auChangement;
+  final VoidCallback auSuppression;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Le nom.
+          Row(
+            children: [
+              Expanded(
+                child: ChampTexte(
+                  libelle: libelle,
+                  valeur: competence.nom,
+                  indication: 'Ex. : Frappe vigoureuse',
+                  auChangement: (v) => auChangement(() => competence.nom = v),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Supprimer cette compétence',
+                onPressed: auSuppression,
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // 2. Le niveau, borné par le plafond venu des coulisses. Sans
+          // plafond écrit là-bas, le compteur monte librement.
+          CompteurEntier(
+            libelle: 'NC',
+            compact: true,
+            valeur: competence.nc,
+            maximum: competence.ncMax > 0 ? competence.ncMax : null,
+            auChangement: (v) => auChangement(() => competence.nc = v),
           ),
         ],
       ),

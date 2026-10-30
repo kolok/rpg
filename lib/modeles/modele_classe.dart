@@ -44,6 +44,13 @@ class ModeleClasse {
   /// La compétence héroïque, présentée comme une compétence ordinaire.
   Competence competenceHeroique;
 
+  /// Toutes les compétences de la classe, la compétence héroïque comprise :
+  /// c'est ce qui est recopié sur une fiche de personnage.
+  List<Competence> get toutesCompetences => [
+    ...competences,
+    competenceHeroique,
+  ];
+
   /// Nom affiché tant que la classe n'en a pas.
   String get nomAffiche => nom.trim().isEmpty ? 'Classe sans nom' : nom.trim();
 

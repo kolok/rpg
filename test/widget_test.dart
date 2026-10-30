@@ -11,13 +11,12 @@ void main() {
     }
   });
 
-  test('une fiche neuve a ses réserves pleines et 3 classes vides', () {
+  test('une fiche neuve a ses réserves pleines et aucune classe', () {
     final personnage = Personnage(nom: 'Aria');
     expect(personnage.pvActuels, personnage.pvMax);
     expect(personnage.pmActuels, personnage.pmMax);
     expect(personnage.piActuels, personnage.piMax);
-    expect(personnage.classes, hasLength(classesParDefaut));
-    expect(personnage.classes.every((c) => c.nom.isEmpty), isTrue);
+    expect(personnage.classes, isEmpty);
   });
 
   test('la fiche survit à un aller-retour JSON', () {
@@ -31,8 +30,10 @@ void main() {
               nom: 'Frappe vigoureuse',
               description: 'Frappe fort.',
               nc: 2,
+              ncMax: 5,
             ),
           ],
+          sorts: [Sort(nom: 'Bouclier', description: 'Protège un allié.')],
         ),
         Classe(
           nom: 'Élémentaliste',
@@ -88,8 +89,13 @@ void main() {
     expect(copie.classes[0].nom, 'Gardien');
     expect(copie.classes[0].competences.first.nom, 'Frappe vigoureuse');
     expect(copie.classes[0].competences.first.description, 'Frappe fort.');
-    // Le NC suit la compétence dans la sauvegarde.
+    // Le NC atteint et son plafond suivent la compétence dans la sauvegarde.
     expect(copie.classes[0].competences.first.nc, 2);
+    expect(copie.classes[0].competences.first.ncMax, 5);
+    // Les sorts appris dans la classe aussi.
+    expect(copie.classes[0].sorts.single.nom, 'Bouclier');
+    expect(copie.classes[0].sorts.single.description, 'Protège un allié.');
+    expect(copie.classes[1].sorts, isEmpty);
     expect(copie.classes[1].nom, 'Élémentaliste');
     expect(copie.classes[1].competences.map((c) => c.nom), [
       'Boule de feu',
@@ -134,7 +140,10 @@ void main() {
     ]);
     expect(copie.classes[0].competences.first.description, isEmpty);
     expect(copie.classes[0].competences.first.nc, 0);
+    expect(copie.classes[0].competences.first.ncMax, 0);
     expect(copie.classes[1].competences, isEmpty);
+    // Les sorts n'existaient pas sur la fiche : les classes en sont dépourvues.
+    expect(copie.classes[0].sorts, isEmpty);
   });
 
   test('l\'inventaire n\'a pas de limite de nombre d\'objets', () {

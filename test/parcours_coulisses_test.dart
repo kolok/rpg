@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg/main.dart';
 import 'package:rpg/modeles/bibliotheque.dart';
+import 'package:rpg/widgets/competences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Les coulisses : écrire une classe une fois, la reprendre sur une fiche.
@@ -43,7 +44,12 @@ void main() {
   }
 
   /// Démarre une partie depuis la page de garde et ouvre la première fiche.
-  Future<void> ouvrirPremiereFiche(WidgetTester tester) async {
+  /// Une fiche neuve n'ayant aucune classe, on en crée une vierge sauf si le
+  /// test veut justement passer par la copie.
+  Future<void> ouvrirPremiereFiche(
+    WidgetTester tester, {
+    bool avecClasseVierge = true,
+  }) async {
     final demarrer = find.text('Démarrer la partie');
     await tester.ensureVisible(demarrer);
     await tester.pumpAndSettle();
@@ -52,6 +58,14 @@ void main() {
     await tester.tap(find.text('Créer les fiches'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Personnage 1'));
+    await tester.pumpAndSettle();
+
+    if (!avecClasseVierge) return;
+    final ajouter = find.text('Ajouter une classe');
+    await defilerJusqua(tester, ajouter);
+    await tester.tap(ajouter);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Créer une classe vierge'));
     await tester.pumpAndSettle();
   }
 
@@ -75,6 +89,19 @@ void main() {
     await tester.enterText(
       find.widgetWithText(TextField, 'Description').first,
       'Frappe fort.',
+    );
+    await tester.pumpAndSettle();
+
+    // Dans la carte, les champs se suivent : le nom, le NC max, la
+    // description. Ce NC est le plafond de la compétence.
+    await tester.enterText(
+      find
+          .descendant(
+            of: find.byType(CarteCompetence).first,
+            matching: find.byType(TextField),
+          )
+          .at(1),
+      '3',
     );
     await tester.pumpAndSettle();
   }
@@ -103,8 +130,8 @@ void main() {
     // Les rubriques se suivent de haut en bas ; la page étant une liste, on
     // ne peut les voir qu'en descendant.
     expect(find.text('COMPÉTENCES'), findsOneWidget);
-    // Le NC accompagne chaque compétence.
-    expect(find.text('NC'), findsWidgets);
+    // Le NC saisi ici est le plafond de la compétence.
+    expect(find.text('NC max'), findsWidgets);
     // Cinq compétences vierges au départ.
     await defilerJusqua(tester, find.widgetWithText(TextField, 'Compétence 5'));
     // Les sorts sont facultatifs : aucun au départ.
@@ -149,9 +176,7 @@ void main() {
     );
   });
 
-  testWidgets('une fiche reprend une classe puis sa compétence', (
-    tester,
-  ) async {
+  testWidgets('une fiche copie une classe des coulisses', (tester) async {
     final bibliotheque = await demarrerApplication(tester);
     await ecrireClasseGardien(tester);
     // Retour à la page de garde.
@@ -160,49 +185,65 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // Une partie, puis la fiche du premier personnage.
-    await ouvrirPremiereFiche(tester);
+    // Une partie, puis la fiche du premier personnage, encore sans classe.
+    await ouvrirPremiereFiche(tester, avecClasseVierge: false);
 
-    // Reprendre la classe des coulisses remplit son nom.
-    final reprendre = find.text('Reprendre une classe des coulisses');
-    await defilerJusqua(tester, reprendre);
-    await tester.tap(reprendre.first);
+    final ajouter = find.text('Ajouter une classe');
+    await defilerJusqua(tester, ajouter);
+    await tester.tap(ajouter);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copier une classe des coulisses'));
     await tester.pumpAndSettle();
     expect(find.text('Classes des coulisses'), findsOneWidget);
     await tester.tap(find.text('Gardien').last);
     await tester.pumpAndSettle();
 
-    final classe = bibliotheque.courante!.personnages.first.classes.first;
+    // Le nom et la compétence sont sur la fiche, au NC zéro.
+    final classe = bibliotheque.courante!.personnages.first.classes.single;
     expect(classe.nom, 'Gardien');
-
-    // Puis piocher une compétence dans cette même classe.
-    final depuisCoulisses = find.text('Depuis les coulisses');
-    await defilerJusqua(tester, depuisCoulisses);
-    await tester.tap(depuisCoulisses.first);
-    await tester.pumpAndSettle();
-    expect(find.text('Compétences de Gardien'), findsOneWidget);
-    await tester.tap(find.text('Frappe vigoureuse').last);
-    await tester.pumpAndSettle();
-
     expect(classe.competences, hasLength(1));
     expect(classe.competences.first.nom, 'Frappe vigoureuse');
-    expect(classe.competences.first.description, 'Frappe fort.');
-    // Le personnage démarre la compétence au NC zéro.
     expect(classe.competences.first.nc, 0);
-  });
+    expect(classe.competences.first.ncMax, 3);
+    // Les sorts, eux, ne suivent pas.
+    expect(classe.sorts, isEmpty);
 
-  testWidgets('sans classe reprise, la fiche dit où puiser', (tester) async {
-    await demarrerApplication(tester);
-    await ouvrirPremiereFiche(tester);
-
-    final depuisCoulisses = find.text('Depuis les coulisses');
-    await defilerJusqua(tester, depuisCoulisses);
-    await tester.tap(depuisCoulisses.first);
-    await tester.pumpAndSettle();
-
+    // Sur la fiche, la compétence tient en deux lignes : son nom, puis son
+    // niveau borné par le plafond des coulisses. Pas de description.
+    final ligne = find.byType(LigneCompetenceFiche);
+    await defilerJusqua(tester, ligne);
     expect(
-      find.text('Choisissez d\'abord la classe dans les coulisses.'),
+      find.descendant(of: ligne, matching: find.text('Description')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: ligne, matching: find.text('NC')),
       findsOneWidget,
     );
+    expect(
+      find.descendant(of: ligne, matching: find.text('/ 3')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('une classe de la fiche reçoit des sorts à la main', (
+    tester,
+  ) async {
+    final bibliotheque = await demarrerApplication(tester);
+    await ouvrirPremiereFiche(tester);
+
+    final ajouterSort = find.text('Ajouter un sort');
+    await defilerJusqua(tester, ajouterSort);
+    await tester.tap(ajouterSort);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Sort 1'),
+      'Bouclier',
+    );
+    await tester.pumpAndSettle();
+
+    final classe = bibliotheque.courante!.personnages.first.classes.single;
+    expect(classe.sorts.single.nom, 'Bouclier');
   });
 }

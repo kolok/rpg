@@ -114,8 +114,10 @@ class CompteurEntier extends StatefulWidget {
     required this.auChangement,
     this.pas = 1,
     this.minimum = 0,
+    this.maximum,
     this.couleur,
     this.icone,
+    this.compact = false,
   });
 
   final String libelle;
@@ -127,10 +129,22 @@ class CompteurEntier extends StatefulWidget {
   /// (c'est le cas de l'initiative).
   final int? minimum;
 
+  /// Valeur plafond, ou `null` quand il n'y en a pas. Elle est rappelée
+  /// après le compteur, sous la forme « / 5 ».
+  final int? maximum;
+
   final Color? couleur;
   final IconData? icone;
 
+  /// Sur une seule ligne, le libellé à gauche du compteur : c'est la forme
+  /// utilisée par le NC des compétences sur la fiche de personnage.
+  final bool compact;
+
   bool _tropPetit(int valeur) => minimum != null && valeur < minimum!;
+
+  bool _tropGrand(int valeur) => maximum != null && valeur > maximum!;
+
+  bool _horsBornes(int valeur) => _tropPetit(valeur) || _tropGrand(valeur);
 
   @override
   State<CompteurEntier> createState() => _CompteurEntierState();
@@ -169,14 +183,14 @@ class _CompteurEntierState extends State<CompteurEntier> {
   /// Enregistre la saisie au fil de la frappe, dès qu'elle est valide.
   void _saisie(String texte) {
     final valeur = int.tryParse(texte.trim());
-    if (valeur == null || widget._tropPetit(valeur)) return;
+    if (valeur == null || widget._horsBornes(valeur)) return;
     if (valeur != widget.valeur) widget.auChangement(valeur);
   }
 
   /// Remet le champ au propre quand on le quitte (saisie vide ou invalide).
   void _valider() {
     final saisie = int.tryParse(_controleur.text.trim());
-    final valeur = saisie == null || widget._tropPetit(saisie)
+    final valeur = saisie == null || widget._horsBornes(saisie)
         ? widget.valeur
         : saisie;
     if (_controleur.text != '$valeur') _controleur.text = '$valeur';
@@ -184,8 +198,9 @@ class _CompteurEntierState extends State<CompteurEntier> {
   }
 
   void _decaler(int delta) {
-    final nouvelle = widget.valeur + delta;
-    final valeur = widget._tropPetit(nouvelle) ? widget.minimum! : nouvelle;
+    var valeur = widget.valeur + delta;
+    if (widget._tropPetit(valeur)) valeur = widget.minimum!;
+    if (widget._tropGrand(valeur)) valeur = widget.maximum!;
     _controleur.text = '$valeur';
     widget.auChangement(valeur);
   }
@@ -195,66 +210,92 @@ class _CompteurEntierState extends State<CompteurEntier> {
     final theme = Theme.of(context);
     final couleur = widget.couleur ?? theme.colorScheme.primary;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final libelle = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            if (widget.icone != null) ...[
-              Icon(widget.icone, size: 16, color: couleur),
-              const SizedBox(width: 6),
-            ],
-            Flexible(
-              child: Text(
-                widget.libelle,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
+        if (widget.icone != null) ...[
+          Icon(widget.icone, size: 16, color: couleur),
+          const SizedBox(width: 6),
+        ],
+        Flexible(
+          child: Text(
+            widget.libelle,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            IconButton.filledTonal(
-              visualDensity: VisualDensity.compact,
-              onPressed:
-                  widget._tropPetit(widget.valeur - widget.pas) &&
-                      widget.valeur == widget.minimum
-                  ? null
-                  : () => _decaler(-widget.pas),
-              icon: const Icon(Icons.remove, size: 18),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _controleur,
-                focusNode: _focus,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.numberWithOptions(
-                  signed: widget.minimum == null,
-                ),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: couleur,
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: _saisie,
-                onSubmitted: (_) => _valider(),
-              ),
-            ),
-            IconButton.filledTonal(
-              visualDensity: VisualDensity.compact,
-              onPressed: () => _decaler(widget.pas),
-              icon: const Icon(Icons.add, size: 18),
-            ),
-          ],
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
+    );
+
+    final compteur = Row(
+      children: [
+        IconButton.filledTonal(
+          visualDensity: VisualDensity.compact,
+          onPressed:
+              widget._tropPetit(widget.valeur - widget.pas) &&
+                  widget.valeur == widget.minimum
+              ? null
+              : () => _decaler(-widget.pas),
+          icon: const Icon(Icons.remove, size: 18),
+        ),
+        Expanded(
+          child: TextField(
+            controller: _controleur,
+            focusNode: _focus,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.numberWithOptions(
+              signed: widget.minimum == null,
+            ),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: couleur,
+            ),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+            onChanged: _saisie,
+            onSubmitted: (_) => _valider(),
+          ),
+        ),
+        IconButton.filledTonal(
+          visualDensity: VisualDensity.compact,
+          // Au plafond, le bouton + s'éteint.
+          onPressed: widget.valeur == widget.maximum
+              ? null
+              : () => _decaler(widget.pas),
+          icon: const Icon(Icons.add, size: 18),
+        ),
+        // Le plafond se lit à la suite du compteur : « 2 / 5 ».
+        if (widget.maximum != null) ...[
+          const SizedBox(width: 6),
+          Text(
+            '/ ${widget.maximum}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    // En forme compacte, le libellé se met à gauche du compteur au lieu de
+    // s'empiler au-dessus : la compétence tient alors sur une seule ligne.
+    if (widget.compact) {
+      return Row(
+        children: [
+          libelle,
+          const SizedBox(width: 12),
+          Expanded(child: compteur),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [libelle, const SizedBox(height: 6), compteur],
     );
   }
 }
