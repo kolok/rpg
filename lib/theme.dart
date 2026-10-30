@@ -8,7 +8,7 @@ ThemeData _base(Brightness brightness) {
     seedColor: _graine,
     brightness: brightness,
   );
-  return ThemeData(
+  final theme = ThemeData(
     colorScheme: schema,
     useMaterial3: true,
     appBarTheme: AppBarTheme(
@@ -28,10 +28,17 @@ ThemeData _base(Brightness brightness) {
       border: OutlineInputBorder(),
       isDense: true,
     ),
+  );
+  // Le texte du gros bouton part de la typographie du thème, pour garder la
+  // police de la plateforme.
+  return theme.copyWith(
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size(0, 48),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: theme.textTheme.labelLarge?.copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
   );
