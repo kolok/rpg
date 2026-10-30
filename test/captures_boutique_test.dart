@@ -64,9 +64,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final accueil = tester.element(find.byType(EcranAccueil));
-    Navigator.of(accueil).push(
-      MaterialPageRoute<void>(builder: (_) => const EcranCoulisses()),
-    );
+    Navigator.of(
+      accueil,
+    ).push(MaterialPageRoute<void>(builder: (_) => const EcranCoulisses()));
     await tester.pumpAndSettle();
     await _enregistrer(tester, '06-coulisses');
   }, skip: Platform.environment['GENERER_CAPTURES'] != '1');
@@ -133,7 +133,10 @@ Map<String, Object> _sauvegardeVitrine() {
       ),
     ],
     sorts: [
-      Sort(nom: 'Étincelle', description: 'Une flamme brève, à portée de main.'),
+      Sort(
+        nom: 'Étincelle',
+        description: 'Une flamme brève, à portée de main.',
+      ),
     ],
     competenceHeroique: Competence(
       nom: 'Tempête intérieure',

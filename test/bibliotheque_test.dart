@@ -83,10 +83,10 @@ void main() {
     bibliotheque.demarrer(nombreJoueurs: 3, nom: 'La couronne d\'ambre');
 
     bibliotheque.supprimerPersonnage(bibliotheque.courante!.personnages[1]);
-    expect(
-      bibliotheque.courante!.personnages.map((p) => p.nom),
-      ['Personnage 1', 'Personnage 3'],
-    );
+    expect(bibliotheque.courante!.personnages.map((p) => p.nom), [
+      'Personnage 1',
+      'Personnage 3',
+    ]);
 
     // Le nom proposé évite l'homonyme laissé libre par la suppression.
     final ajoute = bibliotheque.ajouterPersonnage();
@@ -95,9 +95,10 @@ void main() {
 
     await bibliotheque.sauvegarder();
     final rechargee = await Bibliotheque.charger();
-    expect(
-      rechargee.parties.single.personnages.map((p) => p.nom),
-      ['Personnage 1', 'Personnage 3', 'Personnage 4'],
-    );
+    expect(rechargee.parties.single.personnages.map((p) => p.nom), [
+      'Personnage 1',
+      'Personnage 3',
+      'Personnage 4',
+    ]);
   });
 }
