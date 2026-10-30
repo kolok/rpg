@@ -7,13 +7,13 @@ void main() {
     final une = ModeleClasse.neuve()
       ..nom = 'Gardien'
       ..competences[0].nom = 'Frappe';
-    expect(une.resume, '1 compétence');
+    expect(une.resume, '1\u00A0compétence');
 
     final plusieurs = ModeleClasse.neuve()
       ..competences[0].nom = 'A'
       ..competences[1].nom = 'B'
       ..sorts.add(Sort(nom: 'Bouclier'));
-    expect(plusieurs.resume, '2 compétences · 1 sorts');
+    expect(plusieurs.resume, '2\u00A0compétences · 1\u00A0sorts');
   });
 
   test('ModeleClasse.depuisJson tolère des champs absents', () {

@@ -136,7 +136,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await ouvrirCoulisses(tester);
-    expect(find.text('1 compétence'), findsOneWidget);
+    expect(find.text('1\u00A0compétence'), findsOneWidget);
 
     await tester.tap(find.text('Gardien'));
     await tester.pumpAndSettle();
@@ -234,7 +234,33 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    await defilerJusqua(tester, find.text('Points de réussite'));
+    final ajouterClasse = find.text('Ajouter une classe');
+    await defilerJusqua(tester, ajouterClasse);
+    await tester.tap(ajouterClasse);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Créer une classe vierge'));
+    await tester.pumpAndSettle();
+
+    final modifier = find.text('Modifier');
+    await tester.ensureVisible(modifier.first);
+    await tester.pumpAndSettle();
+    await tester.tap(modifier);
+    await tester.pumpAndSettle();
+
+    final supprimerClasse = find.text('Supprimer cette classe');
+    await defilerJusqua(tester, supprimerClasse);
+    await tester.tap(supprimerClasse);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Supprimer'));
+    await tester.pumpAndSettle();
+    expect(bibliotheque.courante!.personnages.first.classes, isEmpty);
+
+    await tester.scrollUntilVisible(
+      find.text('Points de réussite'),
+      -200,
+      scrollable: defilement,
+    );
+    await tester.pumpAndSettle();
     await tapPlusCompteur(tester, 'Points de réussite');
 
     await defilerJusqua(tester, find.text('Zénits'));
@@ -252,19 +278,6 @@ void main() {
     await defilerJusqua(tester, inventaire);
     await tester.tap(find.text('Ajouter').last);
     await tester.pumpAndSettle();
-
-    final ajouterClasse = find.text('Ajouter une classe');
-    await defilerJusqua(tester, ajouterClasse);
-    await tester.tap(ajouterClasse);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Créer une classe vierge'));
-    await tester.pumpAndSettle();
-
-    final supprimerClasse = find.byTooltip('Supprimer cette classe');
-    await defilerJusqua(tester, supprimerClasse);
-    await tester.tap(supprimerClasse);
-    await tester.pumpAndSettle();
-    expect(bibliotheque.courante!.personnages.first.classes, isEmpty);
   });
 
   testWidgets('la fiche monstre couvre PM, équipement et compétences', (
