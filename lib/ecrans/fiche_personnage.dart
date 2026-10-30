@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../modeles/bibliotheque.dart';
+import '../modeles/competence.dart';
+import '../modeles/modele_classe.dart';
 import '../modeles/personnage.dart';
 import '../widgets/champs.dart';
+import '../widgets/competences.dart';
+import 'coulisses.dart';
 import 'des.dart';
 
 /// Écran 3 — fiche détaillée d'un personnage, entièrement modifiable
@@ -16,13 +20,67 @@ class EcranFichePersonnage extends StatelessWidget {
   Future<void> _supprimer(BuildContext context) async {
     final bibliotheque = BibliothequeScope.de(context);
     final navigateur = Navigator.of(context);
-    final confirme = await showDialog<bool>(
-      context: context,
-      builder: (_) => _DialogueSuppression(personnage: personnage),
+    final nom = personnage.nom.trim().isEmpty
+        ? 'cette fiche sans nom'
+        : '« ${personnage.nom.trim()} »';
+    final confirme = await confirmerSuppression(
+      context,
+      titre: 'Supprimer ce personnage ?',
+      message:
+          'La fiche de $nom sera définitivement effacée de la partie. '
+          'Cette action est irréversible.',
     );
-    if (confirme != true) return;
+    if (!confirme) return;
     bibliotheque.supprimerPersonnage(personnage);
     navigateur.pop();
+  }
+
+  /// Demande d'où vient la nouvelle classe : des coulisses, ou de rien.
+  Future<void> _ajouterClasse(BuildContext context) async {
+    final bibliotheque = BibliothequeScope.de(context);
+    final depuisCoulisses = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ajouter une classe'),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.workspace_premium),
+              title: const Text('Copier une classe des coulisses'),
+              subtitle: const Text(
+                'Son nom et ses compétences, chacune au NC 0.',
+              ),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+            ListTile(
+              leading: const Icon(Icons.note_add_outlined),
+              title: const Text('Créer une classe vierge'),
+              subtitle: const Text('À écrire directement sur la fiche.'),
+              onTap: () => Navigator.of(context).pop(false),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+        ],
+      ),
+    );
+    if (depuisCoulisses == null) return;
+    if (!depuisCoulisses) {
+      bibliotheque.modifier(() => personnage.classes.add(Classe()));
+      return;
+    }
+    if (!context.mounted) return;
+    final modele = await choisirClasseCoulisses(context);
+    if (modele == null) return;
+    bibliotheque.modifier(
+      () => personnage.classes.add(Classe.depuisModele(modele)),
+    );
   }
 
   @override
@@ -36,15 +94,13 @@ class EcranFichePersonnage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          personnage.nom.trim().isEmpty ? 'Fiche' : personnage.nom,
-        ),
+        title: Text(personnage.nom.trim().isEmpty ? 'Fiche' : personnage.nom),
         actions: [
           IconButton(
             tooltip: 'Lancer les dés',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EcranDes()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const EcranDes())),
             icon: const Icon(Icons.casino),
           ),
         ],
@@ -173,7 +229,8 @@ class EcranFichePersonnage extends StatelessWidget {
                   // Pas de plancher : les malus d'armure descendent sous zéro.
                   minimum: null,
                   valeur: personnage.initiative,
-                  auChangement: (v) => modifier(() => personnage.initiative = v),
+                  auChangement: (v) =>
+                      modifier(() => personnage.initiative = v),
                 ),
               ],
             ),
@@ -207,7 +264,22 @@ class EcranFichePersonnage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 8, 9, 10. Chaque classe avec les compétences qui lui sont associées.
+          // 8. Les classes du personnage, avec leurs compétences. Une fiche
+          // neuve n'en a aucune : le message dit où commencer.
+          if (personnage.classes.isEmpty) ...[
+            SectionFiche(
+              titre: 'Classes',
+              icone: Icons.workspace_premium,
+              enfant: Text(
+                'Aucune classe sur cette fiche. Ajoutez-en une pour lui '
+                'associer des compétences.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           for (var i = 0; i < personnage.classes.length; i++) ...[
             _CarteClasse(
               key: ValueKey('classe-$i-${personnage.classes.length}'),
@@ -220,7 +292,7 @@ class EcranFichePersonnage extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           OutlinedButton.icon(
-            onPressed: () => modifier(() => personnage.classes.add(Classe())),
+            onPressed: () => _ajouterClasse(context),
             icon: const Icon(Icons.add),
             label: const Text('Ajouter une classe'),
           ),
@@ -274,109 +346,15 @@ class EcranFichePersonnage extends StatelessWidget {
           const SizedBox(height: 32),
 
           // 14. La zone de danger, tout en bas : on n'y arrive pas par hasard.
-          _ZoneDeDanger(onSupprimer: () => _supprimer(context)),
+          ZoneDeDanger(
+            explication:
+                'Retirer ce personnage de la partie efface sa fiche pour de '
+                'bon. Les autres fiches ne sont pas touchées.',
+            libelleBouton: 'Supprimer ce personnage',
+            onSupprimer: () => _supprimer(context),
+          ),
         ],
       ),
-    );
-  }
-}
-
-/// Encadré rouge de fin de fiche, isolant l'action irréversible.
-class _ZoneDeDanger extends StatelessWidget {
-  const _ZoneDeDanger({required this.onSupprimer});
-
-  final VoidCallback onSupprimer;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 18,
-                  color: theme.colorScheme.error,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'ZONE DE DANGER',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    letterSpacing: 1.1,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Retirer ce personnage de la partie efface sa fiche pour de '
-              'bon. Les autres fiches ne sont pas touchées.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: onSupprimer,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Supprimer ce personnage'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
-                side: BorderSide(color: theme.colorScheme.error),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Confirmation avant de supprimer une fiche.
-class _DialogueSuppression extends StatelessWidget {
-  const _DialogueSuppression({required this.personnage});
-
-  final Personnage personnage;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final nom = personnage.nom.trim().isEmpty
-        ? 'cette fiche sans nom'
-        : '« ${personnage.nom.trim()} »';
-    return AlertDialog(
-      icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-      title: const Text('Supprimer ce personnage ?'),
-      content: Text(
-        'La fiche de $nom sera définitivement effacée de la partie. '
-        'Cette action est irréversible.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Annuler'),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: theme.colorScheme.error,
-            foregroundColor: theme.colorScheme.onError,
-          ),
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Supprimer'),
-        ),
-      ],
     );
   }
 }
@@ -396,9 +374,28 @@ class _CarteClasse extends StatelessWidget {
   final void Function(void Function()) auChangement;
   final VoidCallback auSuppression;
 
+  /// Texte en retrait, pour les rubriques encore vides.
+  Widget _messageVide(ThemeData theme, String texte) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      texte,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontStyle: FontStyle.italic,
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Trait discret entre deux compétences, pour qu'on les distingue d'un
+    // coup d'œil sans alourdir la fiche.
+    final separateur = Divider(
+      height: 1,
+      thickness: 0.5,
+      color: theme.colorScheme.outlineVariant,
+    );
 
     return SectionFiche(
       titre: classe.nom.trim().isEmpty ? 'Classe $numero' : classe.nom,
@@ -418,17 +415,60 @@ class _CarteClasse extends StatelessWidget {
             indication: 'Ex. : Gardien, Élémentaliste…',
             auChangement: (v) => auChangement(() => classe.nom = v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             'Compétences de cette classe',
             style: theme.textTheme.labelMedium,
           ),
+          const SizedBox(height: 4),
+          if (classe.competences.isEmpty)
+            _messageVide(theme, 'Aucune compétence pour cette classe.'),
+          for (var i = 0; i < classe.competences.length; i++) ...[
+            if (i > 0) separateur,
+            LigneCompetenceFiche(
+              // La clé lie la ligne à sa position dans la liste.
+              key: ValueKey('competence-$i-${classe.competences.length}'),
+              competence: classe.competences[i],
+              libelle: 'Compétence ${i + 1}',
+              auChangement: auChangement,
+              auSuppression: () =>
+                  auChangement(() => classe.competences.removeAt(i)),
+            ),
+          ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () =>
+                  auChangement(() => classe.competences.add(Competence())),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Ajouter une compétence'),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Les sorts ne suivent jamais la classe recopiée : le personnage
+          // n'apprend que ceux qu'on lui ajoute ici.
+          Text('Sorts de cette classe', style: theme.textTheme.labelMedium),
           const SizedBox(height: 8),
-          ListeTextes(
-            valeurs: classe.competences,
-            indication: 'Ex. : Frappe vigoureuse (niv. 2)…',
-            messageVide: 'Aucune compétence pour cette classe.',
-            auChangement: (v) => auChangement(() => classe.competences = v),
+          if (classe.sorts.isEmpty)
+            _messageVide(theme, 'Aucun sort appris dans cette classe.'),
+          for (var i = 0; i < classe.sorts.length; i++)
+            CarteSort(
+              key: ValueKey('sort-$i-${classe.sorts.length}'),
+              sort: classe.sorts[i],
+              libelle: 'Sort ${i + 1}',
+              auChangement: auChangement,
+              auSuppression: () => auChangement(() => classe.sorts.removeAt(i)),
+            ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              // Comme dans les coulisses, dix sorts au plus par classe.
+              onPressed: classe.sorts.length >= sortsMaximum
+                  ? null
+                  : () => auChangement(() => classe.sorts.add(Sort())),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Ajouter un sort'),
+            ),
           ),
         ],
       ),

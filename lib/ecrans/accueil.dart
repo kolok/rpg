@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../modeles/bibliotheque.dart';
 import '../modeles/partie.dart';
-import 'liste_personnages.dart';
+import 'coulisses.dart';
+import 'partie_en_cours.dart';
 
 /// Écran 1 — page de garde : présentation, parties enregistrées et démarrage
 /// d'une nouvelle partie.
@@ -29,7 +30,7 @@ class EcranAccueil extends StatelessWidget {
   void _ouvrirEcranPartie(BuildContext context) {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const EcranListePersonnages()));
+    ).push(MaterialPageRoute(builder: (_) => const EcranPartieEnCours()));
   }
 
   Future<void> _renommer(BuildContext context, Partie partie) async {
@@ -179,6 +180,18 @@ class EcranAccueil extends StatelessWidget {
                             ? 'Démarrer la partie'
                             : 'Nouvelle partie',
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Les coulisses ne dépendent d'aucune partie : on y entre
+                    // depuis la page de garde.
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const EcranCoulisses(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.workspace_premium),
+                      label: const Text('Coulisses'),
                     ),
                   ],
                 ),

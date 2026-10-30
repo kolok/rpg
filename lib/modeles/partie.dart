@@ -1,3 +1,4 @@
+import 'monstre.dart';
 import 'personnage.dart';
 
 /// Une partie sauvegardée : ses fiches de personnages, son nom et la date de
@@ -15,7 +16,8 @@ class Partie {
     required this.nom,
     required this.modifiee,
     required this.personnages,
-  });
+    List<Monstre>? monstres,
+  }) : monstres = monstres ?? <Monstre>[];
 
   /// Crée une partie neuve avec [nombreJoueurs] fiches vierges.
   factory Partie.neuve({required int nombreJoueurs, String? nom}) {
@@ -40,6 +42,10 @@ class Partie {
   DateTime modifiee;
   List<Personnage> personnages;
 
+  /// Les fiches de monstres de l'espace meneur de jeu. Une partie neuve n'en
+  /// a aucune : le meneur les crée au fil des rencontres.
+  List<Monstre> monstres;
+
   /// Nom proposé pour une fiche ajoutée en cours de partie : le premier
   /// « Personnage n » encore libre, pour ne pas créer deux homonymes après
   /// une suppression.
@@ -50,6 +56,17 @@ class Partie {
       numero++;
     }
     return 'Personnage $numero';
+  }
+
+  /// Nom proposé pour un monstre ajouté par le meneur, sur le même principe
+  /// que celui des personnages.
+  String nomLibreMonstre() {
+    final pris = monstres.map((m) => m.nom.trim()).toSet();
+    var numero = monstres.length + 1;
+    while (pris.contains('Monstre $numero')) {
+      numero++;
+    }
+    return 'Monstre $numero';
   }
 
   /// Nom proposé quand le joueur n'en donne pas : « Partie du 21/08/2026 ».
@@ -81,6 +98,7 @@ class Partie {
     'nom': nom,
     'modifiee': modifiee.toIso8601String(),
     'personnages': personnages.map((p) => p.versJson()).toList(),
+    'monstres': monstres.map((m) => m.versJson()).toList(),
   };
 
   factory Partie.depuisJson(Map<String, dynamic> json) {
@@ -93,6 +111,11 @@ class Partie {
       modifiee: modifiee ?? DateTime.now(),
       personnages: (json['personnages'] as List? ?? const [])
           .map((e) => Personnage.depuisJson((e as Map).cast<String, dynamic>()))
+          .toList(),
+      // Les parties enregistrées avant l'espace meneur de jeu n'ont pas de
+      // monstres : elles s'ouvrent avec une liste vide.
+      monstres: (json['monstres'] as List? ?? const [])
+          .map((e) => Monstre.depuisJson((e as Map).cast<String, dynamic>()))
           .toList(),
     );
   }

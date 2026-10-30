@@ -1,6 +1,9 @@
 /// Modèle de données d'une fiche de personnage RPG.
 library;
 
+import 'competence.dart';
+import 'modele_classe.dart';
+
 /// Les quatre caractéristiques du jeu. Chacune est associée à un dé.
 enum Caracteristique {
   puissance('Puissance'),
@@ -17,29 +20,62 @@ enum Caracteristique {
 /// Dés utilisables pour les caractéristiques (échelle du jeu : d6 → d12).
 const List<int> desCaracteristiques = [6, 8, 10, 12];
 
-/// Nombre de classes créées sur une fiche vierge.
-const int classesParDefaut = 3;
-
-/// Une classe du personnage et les compétences qui lui sont associées.
+/// Une classe du personnage, ses compétences et ses sorts.
 class Classe {
-  Classe({this.nom = '', List<String>? competences})
-      : competences = competences ?? <String>[];
+  Classe({
+    this.nom = '',
+    List<Competence>? competences,
+    List<Sort>? sorts,
+    this.modeleId,
+  }) : competences = competences ?? <Competence>[],
+       sorts = sorts ?? <Sort>[];
+
+  /// Classe recopiée depuis les coulisses.
+  factory Classe.depuisModele(ModeleClasse modele) =>
+      Classe()..reprendre(modele);
 
   String nom;
-  List<String> competences;
+  List<Competence> competences;
+
+  /// Les sorts que le personnage a appris dans cette classe. Ils ne sont
+  /// jamais recopiés des coulisses : on les ajoute un par un.
+  List<Sort> sorts;
+
+  /// Identifiant de la classe des coulisses d'où celle-ci a été reprise, s'il
+  /// y en a une : c'est là qu'on va chercher les compétences à proposer.
+  String? modeleId;
+
+  /// Reprend une classe des coulisses : son nom, le lien vers le modèle, et
+  /// les compétences qui manquent encore — au NC zéro, puisque celui des
+  /// coulisses n'est qu'un plafond. Rien de ce qui est déjà écrit n'est
+  /// écrasé, et les sorts ne suivent pas.
+  void reprendre(ModeleClasse modele) {
+    nom = modele.nom;
+    modeleId = modele.id;
+    final connues = competences
+        .map((c) => c.nom.trim().toLowerCase())
+        .where((nom) => nom.isNotEmpty)
+        .toSet();
+    for (final competence in modele.toutesCompetences) {
+      final nom = competence.nom.trim().toLowerCase();
+      if (nom.isEmpty || !connues.add(nom)) continue;
+      competences.add(competence.pourFiche());
+    }
+  }
 
   Map<String, dynamic> versJson() => {
-        'nom': nom,
-        'competences': competences,
-      };
+    'nom': nom,
+    'competences': competences.map((c) => c.versJson()).toList(),
+    'sorts': sorts.map((s) => s.versJson()).toList(),
+    'modeleId': modeleId,
+  };
 
   factory Classe.depuisJson(Map<String, dynamic> json) => Classe(
-        nom: json['nom'] as String? ?? '',
-        competences: (json['competences'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            <String>[],
-      );
+    nom: json['nom'] as String? ?? '',
+    competences: Competence.listeDepuisJson(json['competences']),
+    sorts: Sort.listeDepuisJson(json['sorts']),
+    modeleId: json['modeleId'] as String?,
+  );
 }
 
 class Personnage {
@@ -61,15 +97,16 @@ class Personnage {
     this.defenseMagique = 0,
     this.initiative = 0,
     Map<Caracteristique, int>? caracteristiques,
-  })  : classes = classes ?? List.generate(classesParDefaut, (_) => Classe()),
-        equipement = equipement ?? <String>[],
-        inventaire = inventaire ?? <String>[],
-        // Une fiche neuve démarre avec ses réserves pleines.
-        pvActuels = pvActuels ?? pvMax,
-        pmActuels = pmActuels ?? pmMax,
-        piActuels = piActuels ?? piMax,
-        caracteristiques = caracteristiques ??
-            {for (final c in Caracteristique.values) c: 8};
+    // Une fiche vierge n'a aucune classe : le joueur ajoute les siennes.
+  }) : classes = classes ?? <Classe>[],
+       equipement = equipement ?? <String>[],
+       inventaire = inventaire ?? <String>[],
+       // Une fiche neuve démarre avec ses réserves pleines.
+       pvActuels = pvActuels ?? pvMax,
+       pmActuels = pmActuels ?? pmMax,
+       piActuels = piActuels ?? piMax,
+       caracteristiques =
+           caracteristiques ?? {for (final c in Caracteristique.values) c: 8};
 
   String nom;
   List<Classe> classes;
@@ -99,27 +136,27 @@ class Personnage {
   Map<Caracteristique, int> caracteristiques;
 
   Map<String, dynamic> versJson() => {
-        'nom': nom,
-        'classes': classes.map((c) => c.versJson()).toList(),
-        'pointsDeReussite': pointsDeReussite,
-        'zenits': zenits,
-        'equipement': equipement,
-        'inventaire': inventaire,
-        'niveau': niveau,
-        'pvMax': pvMax,
-        'pvActuels': pvActuels,
-        'pmMax': pmMax,
-        'pmActuels': pmActuels,
-        'piMax': piMax,
-        'piActuels': piActuels,
-        'defense': defense,
-        'defenseMagique': defenseMagique,
-        'initiative': initiative,
-        'caracteristiques': {
-          for (final entree in caracteristiques.entries)
-            entree.key.name: entree.value,
-        },
-      };
+    'nom': nom,
+    'classes': classes.map((c) => c.versJson()).toList(),
+    'pointsDeReussite': pointsDeReussite,
+    'zenits': zenits,
+    'equipement': equipement,
+    'inventaire': inventaire,
+    'niveau': niveau,
+    'pvMax': pvMax,
+    'pvActuels': pvActuels,
+    'pmMax': pmMax,
+    'pmActuels': pmActuels,
+    'piMax': piMax,
+    'piActuels': piActuels,
+    'defense': defense,
+    'defenseMagique': defenseMagique,
+    'initiative': initiative,
+    'caracteristiques': {
+      for (final entree in caracteristiques.entries)
+        entree.key.name: entree.value,
+    },
+  };
 
   factory Personnage.depuisJson(Map<String, dynamic> json) {
     List<String> liste(String cle) =>
@@ -139,9 +176,8 @@ class Personnage {
       nom: json['nom'] as String? ?? '',
       classes: classes,
       // TODO: supprimer la référence à pointsFabula gardée ici pour la rétrocompatibilité.
-      pointsDeReussite: json['pointsDeReussite'] as int? ??
-          json['pointsFabula'] as int? ??
-          3,
+      pointsDeReussite:
+          json['pointsDeReussite'] as int? ?? json['pointsFabula'] as int? ?? 3,
       zenits: json['zenits'] as int? ?? 0,
       equipement: liste('equipement'),
       inventaire: liste('inventaire'),
@@ -175,15 +211,14 @@ class Personnage {
           Classe(nom: element.toString()),
     ];
 
-    final anciennesCompetences =
-        (json['competences'] as List?)?.map((e) => e.toString()).toList();
-    if (anciennesCompetences != null && anciennesCompetences.isNotEmpty) {
+    final anciennesCompetences = Competence.listeDepuisJson(
+      json['competences'],
+    );
+    if (anciennesCompetences.isNotEmpty) {
       if (classes.isEmpty) classes.add(Classe());
       classes.first.competences.addAll(anciennesCompetences);
     }
 
-    return classes.isEmpty
-        ? List.generate(classesParDefaut, (_) => Classe())
-        : classes;
+    return classes;
   }
 }

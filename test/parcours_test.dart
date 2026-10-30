@@ -87,6 +87,30 @@ void main() {
     expect(find.text('Personnage 4'), findsNothing);
   });
 
+  testWidgets('une fiche neuve annonce qu\'elle n\'a aucune classe', (
+    tester,
+  ) async {
+    await demarrerApplication(tester);
+    await creerPartie(tester);
+
+    await tester.tap(find.text('Personnage 1'));
+    await tester.pumpAndSettle();
+
+    final message = find.textContaining('Aucune classe sur cette fiche');
+    await defilerJusqua(tester, message);
+    expect(find.text('Classe 1'), findsNothing);
+
+    // Le bouton d'ajout demande d'abord d'où vient la classe.
+    await tester.tap(find.text('Ajouter une classe'));
+    await tester.pumpAndSettle();
+    expect(find.text('Copier une classe des coulisses'), findsOneWidget);
+    await tester.tap(find.text('Créer une classe vierge'));
+    await tester.pumpAndSettle();
+
+    expect(message, findsNothing);
+    expect(find.widgetWithText(TextField, 'Classe 1'), findsOneWidget);
+  });
+
   testWidgets('modifier une fiche puis revenir à la liste', (tester) async {
     await demarrerApplication(tester);
     await creerPartie(tester);
@@ -104,18 +128,26 @@ void main() {
     await tester.tap(de12.first);
     await tester.pumpAndSettle();
 
+    // La fiche est vierge : il faut d'abord créer une classe.
+    final ajouterClasse = find.text('Ajouter une classe');
+    await defilerJusqua(tester, ajouterClasse);
+    await tester.tap(ajouterClasse);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Créer une classe vierge'));
+    await tester.pumpAndSettle();
+
     // Nommer la première classe, puis lui associer une compétence.
     final champClasse = find.widgetWithText(TextField, 'Classe 1');
     await defilerJusqua(tester, champClasse);
     await tester.enterText(champClasse, 'Gardien');
     await tester.pumpAndSettle();
 
-    final ajouterCompetence = find.text('Ajouter');
+    final ajouterCompetence = find.text('Ajouter une compétence');
     await defilerJusqua(tester, ajouterCompetence);
     await tester.tap(ajouterCompetence.first);
     await tester.pumpAndSettle();
     await tester.enterText(
-      find.widgetWithText(TextField, '1').first,
+      find.widgetWithText(TextField, 'Compétence 1').first,
       'Frappe vigoureuse',
     );
     await tester.pumpAndSettle();
@@ -129,7 +161,7 @@ void main() {
     // La compétence est bien rattachée à la classe.
     await tester.tap(find.text('Aria'));
     await tester.pumpAndSettle();
-    final champCompetence = find.widgetWithText(TextField, '1');
+    final champCompetence = find.widgetWithText(TextField, 'Compétence 1');
     await defilerJusqua(tester, champCompetence);
     expect(
       tester.widget<TextField>(champCompetence.first).controller?.text,
@@ -313,6 +345,97 @@ void main() {
     // Le niveau s'affiche à droite du nom, sans ouvrir la fiche.
     expect(find.text('Niv. 7'), findsOneWidget);
     expect(find.text('Niv. 0'), findsOneWidget);
+  });
+
+  /// Ouvre l'espace meneur de jeu en balayant la partie de la droite vers
+  /// la gauche.
+  Future<void> ouvrirEspaceMeneur(WidgetTester tester) async {
+    await tester.drag(find.byType(TabBarView), const Offset(-400, 0));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('un balayage vers la gauche ouvre l\'espace meneur de jeu', (
+    tester,
+  ) async {
+    await demarrerApplication(tester);
+    await creerPartie(tester, joueursEnMoins: 2);
+    expect(find.text('Personnage 1'), findsOneWidget);
+
+    await ouvrirEspaceMeneur(tester);
+
+    // Les héros laissent la place aux monstres, la partie reste la même.
+    expect(find.text('Personnage 1'), findsNothing);
+    expect(find.text('Ajouter un monstre'), findsOneWidget);
+
+    // Et un balayage en sens inverse ramène aux héros.
+    await tester.drag(find.byType(TabBarView), const Offset(400, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Personnage 1'), findsOneWidget);
+  });
+
+  testWidgets('le meneur crée une fiche de monstre', (tester) async {
+    await demarrerApplication(tester);
+    await creerPartie(tester, joueursEnMoins: 2);
+    await ouvrirEspaceMeneur(tester);
+
+    await tester.tap(find.text('Ajouter un monstre'));
+    await tester.pumpAndSettle();
+
+    // La fiche neuve s'ouvre directement : nom, niveau, réserves, équipement
+    // et compétences, et rien d'autre.
+    expect(find.text('Monstre 1'), findsWidgets);
+    expect(find.text('Réserves'.toUpperCase()), findsOneWidget);
+    expect(find.text('Équipement'.toUpperCase()), findsOneWidget);
+    expect(find.text('Compétences'.toUpperCase()), findsOneWidget);
+    expect(find.text('Inventaire'.toUpperCase()), findsNothing);
+    expect(find.text('Zénits'.toUpperCase()), findsNothing);
+    expect(find.text('Dés'.toUpperCase()), findsNothing);
+
+    await tester.enterText(find.byType(TextField).first, 'Loup des cendres');
+    await tester.pumpAndSettle();
+    // Dans l'identité, le niveau vient juste après le nom.
+    await tester.enterText(find.byType(TextField).at(1), '12');
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Le monstre est listé avec son niveau, comme les héros.
+    expect(find.text('Loup des cendres'), findsOneWidget);
+    expect(find.text('Niv. 12'), findsOneWidget);
+  });
+
+  testWidgets('supprimer un monstre demande confirmation', (tester) async {
+    await demarrerApplication(tester);
+    await creerPartie(tester, joueursEnMoins: 2);
+    await ouvrirEspaceMeneur(tester);
+
+    await tester.tap(find.text('Ajouter un monstre'));
+    await tester.pumpAndSettle();
+
+    final bouton = find.text('Supprimer ce monstre');
+    await defilerJusqua(tester, bouton);
+    await tester.tap(bouton);
+    await tester.pumpAndSettle();
+
+    // Annuler ne supprime rien.
+    expect(find.text('Supprimer ce monstre ?'), findsOneWidget);
+    await tester.tap(find.text('Annuler'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Monstre 1'), findsOneWidget);
+
+    // Confirmer efface la fiche et ramène à l'espace meneur.
+    await tester.tap(find.text('Monstre 1'));
+    await tester.pumpAndSettle();
+    await defilerJusqua(tester, bouton);
+    await tester.tap(bouton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Supprimer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Monstre 1'), findsNothing);
+    expect(find.text('Ajouter un monstre'), findsOneWidget);
   });
 
   testWidgets('supprimer un personnage demande confirmation', (tester) async {

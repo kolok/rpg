@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rpg/modeles/competence.dart';
 import 'package:rpg/modeles/personnage.dart';
 
 void main() {
@@ -10,21 +11,37 @@ void main() {
     }
   });
 
-  test('une fiche neuve a ses réserves pleines et 3 classes vides', () {
+  test('une fiche neuve a ses réserves pleines et aucune classe', () {
     final personnage = Personnage(nom: 'Aria');
     expect(personnage.pvActuels, personnage.pvMax);
     expect(personnage.pmActuels, personnage.pmMax);
     expect(personnage.piActuels, personnage.piMax);
-    expect(personnage.classes, hasLength(classesParDefaut));
-    expect(personnage.classes.every((c) => c.nom.isEmpty), isTrue);
+    expect(personnage.classes, isEmpty);
   });
 
   test('la fiche survit à un aller-retour JSON', () {
     final origine = Personnage(
       nom: 'Aria',
       classes: [
-        Classe(nom: 'Gardien', competences: ['Frappe vigoureuse']),
-        Classe(nom: 'Élémentaliste', competences: ['Boule de feu', 'Éclair']),
+        Classe(
+          nom: 'Gardien',
+          competences: [
+            Competence(
+              nom: 'Frappe vigoureuse',
+              description: 'Frappe fort.',
+              nc: 2,
+              ncMax: 5,
+            ),
+          ],
+          sorts: [Sort(nom: 'Bouclier', description: 'Protège un allié.')],
+        ),
+        Classe(
+          nom: 'Élémentaliste',
+          competences: [
+            Competence(nom: 'Boule de feu'),
+            Competence(nom: 'Éclair'),
+          ],
+        ),
       ],
       pointsDeReussite: 5,
       zenits: 250,
@@ -70,9 +87,20 @@ void main() {
 
     expect(copie.classes, hasLength(2));
     expect(copie.classes[0].nom, 'Gardien');
-    expect(copie.classes[0].competences, ['Frappe vigoureuse']);
+    expect(copie.classes[0].competences.first.nom, 'Frappe vigoureuse');
+    expect(copie.classes[0].competences.first.description, 'Frappe fort.');
+    // Le NC atteint et son plafond suivent la compétence dans la sauvegarde.
+    expect(copie.classes[0].competences.first.nc, 2);
+    expect(copie.classes[0].competences.first.ncMax, 5);
+    // Les sorts appris dans la classe aussi.
+    expect(copie.classes[0].sorts.single.nom, 'Bouclier');
+    expect(copie.classes[0].sorts.single.description, 'Protège un allié.');
+    expect(copie.classes[1].sorts, isEmpty);
     expect(copie.classes[1].nom, 'Élémentaliste');
-    expect(copie.classes[1].competences, ['Boule de feu', 'Éclair']);
+    expect(copie.classes[1].competences.map((c) => c.nom), [
+      'Boule de feu',
+      'Éclair',
+    ]);
   });
 
   test('une ancienne sauvegarde est reprise sans rien perdre', () {
@@ -105,8 +133,17 @@ void main() {
     expect(copie.niveau, 7);
     // Les compétences orphelines sont rattachées à la première classe.
     expect(copie.classes.map((c) => c.nom), ['Gardien', 'Élémentaliste']);
-    expect(copie.classes[0].competences, ['Frappe vigoureuse']);
+    // Une compétence n'était alors qu'une ligne de texte : elle devient une
+    // compétence sans description, au NC à zéro.
+    expect(copie.classes[0].competences.map((c) => c.nom), [
+      'Frappe vigoureuse',
+    ]);
+    expect(copie.classes[0].competences.first.description, isEmpty);
+    expect(copie.classes[0].competences.first.nc, 0);
+    expect(copie.classes[0].competences.first.ncMax, 0);
     expect(copie.classes[1].competences, isEmpty);
+    // Les sorts n'existaient pas sur la fiche : les classes en sont dépourvues.
+    expect(copie.classes[0].sorts, isEmpty);
   });
 
   test('l\'inventaire n\'a pas de limite de nombre d\'objets', () {
