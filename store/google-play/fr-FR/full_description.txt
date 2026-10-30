@@ -1,7 +1,31 @@
-RPG - fiches de personnage et lancer de dés
+RPG est le compagnon de votre table de jeu de rôle : fiches de personnages, classes réutilisables, fiches de monstres et lancer de dés, dans une seule application.
 
-Application hors ligne pour gérer les fiches de personnages autour de la table et lancer les dés.
+★ Sans publicité, sans compte, sans collecte de données ★
+• Aucune publicité, jamais. Ni bannière, ni vidéo, ni achat intégré.
+• Aucun compte à créer, aucune adresse e-mail demandée.
+• Aucune donnée personnelle collectée ni partagée : pas de statistiques, pas de traceur, pas de service tiers.
+• Tout reste sur votre téléphone. Vos parties ne quittent jamais l'appareil.
+• Fonctionne entièrement hors ligne, même au fond d'une cave sans réseau.
 
-Démarrez une partie (2 à 15 joueurs), remplissez les fiches (PV, PM, caractéristiques, classes, équipement, inventaire) et lancez d4, d6, d8, d10, d12 ou d20. La partie est enregistrée sur l’appareil : rien n’est perdu si l’application est fermée en pleine session.
+Des fiches de personnages complètes
+Nom, niveau, points de réussite, jauges PV / PM / PI, défense, défense magique, initiative (même négative), caractéristiques (d6 à d12), équipement, inventaire et zénits. Tout se modifie d'un geste pendant la partie, et tout est enregistré automatiquement.
 
-Aucune connexion internet n’est nécessaire.
+Des classes claires
+Sur la fiche, chaque classe tient dans un petit résumé : son nom et ses compétences avec leur niveau (NC). Un appui sur « Modifier » ouvre la classe en plein écran pour changer les compétences, leurs descriptions, leurs niveaux, les sorts et les compétences héroïques.
+
+Les coulisses : vos classes écrites une fois pour toutes
+Créez votre bibliothèque de classes (atouts, compétences avec NC maximum, sorts, compétence héroïque) et copiez-la sur n'importe quelle fiche, dans n'importe quelle partie.
+
+L'espace du meneur de jeu
+Un balayage suffit pour passer des héros aux monstres. Ajoutez et suivez vos créatures : niveau, PV, PM, équipement et compétences.
+
+Le lancer de dés
+d4, d6, d8, d10, d12 et d20. Combinez plusieurs dés, y compris plusieurs fois le même : le détail de chaque dé et le total s'affichent aussitôt.
+
+Plusieurs parties en parallèle
+De 2 à 15 joueurs par table, autant de tables que vous voulez. Renommez, quittez ou supprimez une partie depuis la page d'accueil. Vous pouvez ajouter ou retirer un joueur en pleine partie.
+
+Votre table, vos données
+RPG ne demande aucune autorisation sensible : ni localisation, ni contacts, ni appareil photo, ni micro. Désinstaller l'application efface vos parties de l'appareil : personne d'autre n'en a jamais eu de copie.
+
+Bonne partie !

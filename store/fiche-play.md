@@ -27,38 +27,43 @@ RPG — fiches et dés
 Description courte (80 caractères max) :
 
 ```
-Fiches de perso, coulisses, monstres et dés. Tout reste sur l’appareil.
+Fiches de perso et dés, sans pub ni compte. Vos données restent sur l’appareil.
 ```
 
 ## Description longue
 
 ```
-RPG tient la table : fiches de personnages, classes des coulisses, fiches de monstres et lancer de dés. Aucune connexion internet n’est nécessaire. Les parties restent sur l’appareil, même si vous fermez l’application en pleine session.
+RPG est le compagnon de votre table de jeu de rôle : fiches de personnages, classes réutilisables, fiches de monstres et lancer de dés, dans une seule application.
 
-Page de garde
-Présentation, liste de vos parties et bouton Nouvelle partie. Vous donnez un nom à la table et choisissez de 2 à 15 joueurs : une fiche vierge est créée pour chacun. Le bouton Coulisses ouvre la bibliothèque de classes, indépendante des parties.
+★ Sans publicité, sans compte, sans collecte de données ★
+• Aucune publicité, jamais. Ni bannière, ni vidéo, ni achat intégré.
+• Aucun compte à créer, aucune adresse e-mail demandée.
+• Aucune donnée personnelle collectée ni partagée : pas de statistiques, pas de traceur, pas de service tiers.
+• Tout reste sur votre téléphone. Vos parties ne quittent jamais l'appareil.
+• Fonctionne entièrement hors ligne, même au fond d'une cave sans réseau.
 
-Pendant la partie
-Deux pages, que l’on fait défiler d’un balayage latéral.
-• Les héros — toutes les fiches, avec le niveau à droite du nom et un aperçu des PV, PM, PI et points de réussite. En bas, Ajouter un personnage.
-• Meneur de jeu — ouvrez-le en balayant de la droite vers la gauche. Ajoutez et tenez vos fiches de monstres.
+Des fiches de personnages complètes
+Nom, niveau, points de réussite, jauges PV / PM / PI, défense, défense magique, initiative (même négative), caractéristiques (d6 à d12), équipement, inventaire et zénits. Tout se modifie d'un geste pendant la partie, et tout est enregistré automatiquement.
 
-Fiche de personnage
-Tout est modifiable à tout moment : nom, niveau, points de réussite, jauges PV / PM / PI, défenses, initiative (qui peut être négative), caractéristiques (d6, d8, d10 ou d12), classes, compétences, sorts, équipement, inventaire et zénits. Une fiche neuve n’a aucune classe : vous en copiez une depuis les coulisses, ou vous en créez une vierge. La copie vit ensuite sur la fiche, sans modifier les coulisses.
+Des classes claires
+Sur la fiche, chaque classe tient dans un petit résumé : son nom et ses compétences avec leur niveau (NC). Un appui sur « Modifier » ouvre la classe en plein écran pour changer les compétences, leurs descriptions, leurs niveaux, les sorts et les compétences héroïques.
 
-Fiche de monstre
-Une fiche plus courte pour le feu de l’action : nom, niveau, PV, PM, équipement et compétences.
+Les coulisses : vos classes écrites une fois pour toutes
+Créez votre bibliothèque de classes (atouts, compétences avec NC maximum, sorts, compétence héroïque) et copiez-la sur n'importe quelle fiche, dans n'importe quelle partie.
 
-Coulisses
-Votre bibliothèque de classes, écrite une fois pour toutes. Nom, atouts gratuits, compétences (avec un NC maximum), sorts facultatifs et compétence héroïque. Ces pages survivent à la suppression d’une partie et servent à toutes les tables.
+L'espace du meneur de jeu
+Un balayage suffit pour passer des héros aux monstres. Ajoutez et suivez vos créatures : niveau, PV, PM, équipement et compétences.
 
-Lancer de dés
-d4, d6, d8, d10, d12 et d20. Plusieurs dés, y compris plusieurs fois le même. Le détail de chaque dé et le total s’affichent.
+Le lancer de dés
+d4, d6, d8, d10, d12 et d20. Combinez plusieurs dés, y compris plusieurs fois le même : le détail de chaque dé et le total s'affichent aussitôt.
 
 Plusieurs parties en parallèle
-Autant de tables que vous voulez. L’enregistrement est automatique à la moindre modification. Vous pouvez renommer, quitter (la partie est conservée) ou supprimer une table depuis la page de garde.
+De 2 à 15 joueurs par table, autant de tables que vous voulez. Renommez, quittez ou supprimez une partie depuis la page d'accueil. Vous pouvez ajouter ou retirer un joueur en pleine partie.
 
-L’application ne contient ni publicité, ni compte, ni achat.
+Votre table, vos données
+RPG ne demande aucune autorisation sensible : ni localisation, ni contacts, ni appareil photo, ni micro. Désinstaller l'application efface vos parties de l'appareil : personne d'autre n'en a jamais eu de copie.
+
+Bonne partie !
 ```
 
 Notes de version (1.0.0) :
@@ -75,7 +80,18 @@ Déposer dans *Fiche Play Store principale* :
 | --- | --- | --- |
 | Icône haute résolution | `store/icone-512.png` | 512 × 512, PNG 32 bits |
 | Graphique vedette | `store/graphique-vedette.png` | 1024 × 500, PNG |
-| Captures téléphone | `store/captures/*.png` | 1080 × 1920, au moins 2 |
+| Captures téléphone | `store/captures/*.png` | 1080 × 1920, 8 captures |
+
+Ordre conseillé des captures (c’est l’ordre des noms de fichiers) :
+
+1. `01-accueil.png` — page de garde et liste des parties
+2. `02-les-heros.png` — les fiches de la table, niveau à droite du nom
+3. `03-fiche-personnage.png` — identité, points de réussite, réserves
+4. `04-resume-classe.png` — résumé de classe en lecture seule
+5. `05-page-classe.png` — page « Modifier » : compétences, descriptions, NC
+6. `06-meneur-de-jeu.png` — fiches de monstres
+7. `07-lancer-de-des.png` — lancer de dés et total
+8. `08-coulisses.png` — bibliothèque de classes
 
 Regénérer les captures :
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg/ecrans/accueil.dart';
 import 'package:rpg/ecrans/coulisses.dart';
@@ -22,6 +23,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// ```
 void main() {
   testWidgets('génère les captures Play Store', (tester) async {
+    await _chargerPolices();
+    // Les tests remplacent les ombres par un trait noir : on les rétablit.
+    debugDisableShadows = false;
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.reset);
@@ -41,11 +45,29 @@ void main() {
     await tester.pumpAndSettle();
     await _enregistrer(tester, '03-fiche-personnage');
 
+    // Le résumé de la classe, en haut de l'écran.
+    final modifier = find.text('Modifier');
+    await tester.scrollUntilVisible(
+      modifier,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    // Saut immédiat, sans animation : rien à attendre.
+    Scrollable.ensureVisible(tester.element(modifier), alignment: 0.02);
+    await tester.pumpAndSettle();
+    await _enregistrer(tester, '04-resume-classe');
+
+    await tester.tap(modifier);
+    await tester.pumpAndSettle();
+    await _enregistrer(tester, '05-page-classe');
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Meneur de jeu'));
     await tester.pumpAndSettle();
-    await _enregistrer(tester, '04-meneur-de-jeu');
+    await _enregistrer(tester, '06-meneur-de-jeu');
 
     await tester.tap(find.text('Lancer les dés'));
     await tester.pumpAndSettle();
@@ -56,7 +78,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('2. Appuyez sur les dés pour les lancer'));
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    await _enregistrer(tester, '05-lancer-de-des');
+    await _enregistrer(tester, '07-lancer-de-des');
 
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -68,8 +90,36 @@ void main() {
       accueil,
     ).push(MaterialPageRoute<void>(builder: (_) => const EcranCoulisses()));
     await tester.pumpAndSettle();
-    await _enregistrer(tester, '06-coulisses');
+    await _enregistrer(tester, '08-coulisses');
+
+    // Flutter vérifie, avant les tearDown, que la valeur est rétablie.
+    debugDisableShadows = true;
   }, skip: Platform.environment['GENERER_CAPTURES'] != '1');
+}
+
+/// Les tests dessinent le texte avec une police de blocs : on charge Roboto
+/// et les icônes Material du SDK pour que les captures ressemblent à
+/// l'application.
+Future<void> _chargerPolices() async {
+  final racine = Platform.environment['FLUTTER_ROOT']!;
+  final dossier = '$racine/bin/cache/artifacts/material_fonts';
+  final polices = {
+    'Roboto': [
+      'Roboto-Regular.ttf',
+      'Roboto-Italic.ttf',
+      'Roboto-Medium.ttf',
+      'Roboto-Bold.ttf',
+    ],
+    'MaterialIcons': ['MaterialIcons-Regular.otf'],
+  };
+  for (final MapEntry(key: famille, value: fichiers) in polices.entries) {
+    final chargeur = FontLoader(famille);
+    for (final fichier in fichiers) {
+      final octets = File('$dossier/$fichier').readAsBytesSync();
+      chargeur.addFont(Future.value(ByteData.sublistView(octets)));
+    }
+    await chargeur.load();
+  }
 }
 
 Future<void> _enregistrer(WidgetTester tester, String nom) async {
@@ -170,10 +220,31 @@ Map<String, Object> _sauvegardeVitrine() {
         nom: 'Gardien',
         modeleId: gardienId,
         competences: [
-          Competence(nom: 'Frappe vigoureuse', nc: 2, ncMax: 5),
-          Competence(nom: 'Provocation', nc: 1, ncMax: 3),
-          Competence(nom: 'Garde rapprochée', nc: 0, ncMax: 4),
-          Competence(nom: 'Rempart', nc: 0, ncMax: 1),
+          Competence(
+            nom: 'Frappe vigoureuse',
+            description: 'Une attaque puissante au corps à corps.',
+            nc: 2,
+            ncMax: 5,
+          ),
+          Competence(
+            nom: 'Provocation',
+            description: 'Attire l’attention des ennemis.',
+            nc: 1,
+            ncMax: 3,
+          ),
+          Competence(
+            nom: 'Garde rapprochée',
+            description: 'Protège un allié adjacent.',
+            nc: 0,
+            ncMax: 4,
+          ),
+        ],
+        competencesHeroiques: [
+          Competence(
+            nom: 'Rempart',
+            description: 'Devient inébranlable jusqu’à la fin du tour.',
+            ncMax: 1,
+          ),
         ],
       ),
     ],
@@ -208,6 +279,8 @@ Map<String, Object> _sauvegardeVitrine() {
         competences: [
           Competence(nom: 'Boule de feu', nc: 3, ncMax: 5),
           Competence(nom: 'Éclair', nc: 2, ncMax: 4),
+        ],
+        competencesHeroiques: [
           Competence(nom: 'Tempête intérieure', nc: 0, ncMax: 1),
         ],
         sorts: [Sort(nom: 'Étincelle', description: 'Une flamme brève.')],

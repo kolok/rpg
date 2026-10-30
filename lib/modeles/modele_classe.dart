@@ -50,10 +50,10 @@ class ModeleClasse {
   /// Ligne affichée sous le nom dans la liste des coulisses.
   String get resume {
     final nommees = competences.where((c) => c.nom.trim().isNotEmpty).length;
+    final sortsNommes = sorts.where((s) => s.nom.trim().isNotEmpty).length;
     final morceaux = [
       '$nommees ${nommees > 1 ? 'compétences' : 'compétence'}',
-      if (sorts.any((s) => s.nom.trim().isNotEmpty))
-        '${sorts.where((s) => s.nom.trim().isNotEmpty).length} sorts',
+      if (sortsNommes > 0) '$sortsNommes ${sortsNommes > 1 ? 'sorts' : 'sort'}',
       if (competenceHeroique.nom.trim().isNotEmpty) '1 compétence héroïque',
     ];
     // Les espaces insécables gardent chaque morceau d'un seul tenant : la

@@ -13,7 +13,7 @@ void main() {
       ..competences[0].nom = 'A'
       ..competences[1].nom = 'B'
       ..sorts.add(Sort(nom: 'Bouclier'));
-    expect(plusieurs.resume, '2\u00A0compétences · 1\u00A0sorts');
+    expect(plusieurs.resume, '2\u00A0compétences · 1\u00A0sort');
   });
 
   test('ModeleClasse.depuisJson tolère des champs absents', () {
