@@ -44,13 +44,6 @@ class ModeleClasse {
   /// La compétence héroïque, présentée comme une compétence ordinaire.
   Competence competenceHeroique;
 
-  /// Toutes les compétences de la classe, la compétence héroïque comprise :
-  /// c'est ce qui est recopié sur une fiche de personnage.
-  List<Competence> get toutesCompetences => [
-    ...competences,
-    competenceHeroique,
-  ];
-
   /// Nom affiché tant que la classe n'en a pas.
   String get nomAffiche => nom.trim().isEmpty ? 'Classe sans nom' : nom.trim();
 
@@ -61,8 +54,12 @@ class ModeleClasse {
       '$nommees ${nommees > 1 ? 'compétences' : 'compétence'}',
       if (sorts.any((s) => s.nom.trim().isNotEmpty))
         '${sorts.where((s) => s.nom.trim().isNotEmpty).length} sorts',
+      if (competenceHeroique.nom.trim().isNotEmpty) '1 compétence héroïque',
     ];
-    return morceaux.join(' · ');
+    // Les espaces insécables gardent chaque morceau d'un seul tenant : la
+    // ligne ne se coupe qu'entre deux morceaux, jamais au milieu de
+    // « 1 compétence héroïque ».
+    return morceaux.map((m) => m.replaceAll(' ', '\u00A0')).join(' · ');
   }
 
   Map<String, dynamic> versJson() => {

@@ -56,25 +56,25 @@ class _EcranDesState extends State<EcranDes> {
   }
 
   void _ajouter(int faces) => _modifierSelection(
-        () => _selection[faces] = (_selection[faces] ?? 0) + 1,
-      );
+    () => _selection[faces] = (_selection[faces] ?? 0) + 1,
+  );
 
   void _retirer(int faces) => _modifierSelection(() {
-        final nombre = (_selection[faces] ?? 0) - 1;
-        if (nombre <= 0) {
-          _selection.remove(faces);
-        } else {
-          _selection[faces] = nombre;
-        }
-      });
+    final nombre = (_selection[faces] ?? 0) - 1;
+    if (nombre <= 0) {
+      _selection.remove(faces);
+    } else {
+      _selection[faces] = nombre;
+    }
+  });
 
   void _toutEffacer() => _modifierSelection(_selection.clear);
 
   /// Construit la liste à plat des dés sélectionnés, du plus petit au plus grand.
   List<int> get _desChoisis => [
-        for (final faces in desDisponibles)
-          ...List.filled(_selection[faces] ?? 0, faces),
-      ];
+    for (final faces in desDisponibles)
+      ...List.filled(_selection[faces] ?? 0, faces),
+  ];
 
   void _lancer() {
     if (_nombreDes == 0 || _enCours) return;
@@ -89,7 +89,8 @@ class _EcranDesState extends State<EcranDes> {
       ticks++;
       setState(() {
         _resultats = [
-          for (final faces in choisis) _Lancer(faces, _hasard.nextInt(faces) + 1),
+          for (final faces in choisis)
+            _Lancer(faces, _hasard.nextInt(faces) + 1),
         ];
       });
       if (ticks >= 8) {
@@ -310,8 +311,8 @@ class _ZoneLancer extends StatelessWidget {
               enCours
                   ? 'Les dés roulent…'
                   : lance
-                      ? 'Appuyez de nouveau pour relancer'
-                      : '2. Appuyez sur les dés pour les lancer',
+                  ? 'Appuyez de nouveau pour relancer'
+                  : '2. Appuyez sur les dés pour les lancer',
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,

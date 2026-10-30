@@ -108,6 +108,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(message, findsNothing);
+    // La fiche n'en montre qu'un résumé, sans champ à remplir.
+    expect(find.text('CLASSE 1'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Classe 1'), findsNothing);
+
+    // « Modifier » ouvre la page plein écran de la classe.
+    await defilerJusqua(tester, find.text('Modifier'));
+    await tester.tap(find.text('Modifier'));
+    await tester.pumpAndSettle();
     expect(find.widgetWithText(TextField, 'Classe 1'), findsOneWidget);
   });
 
@@ -136,7 +144,10 @@ void main() {
     await tester.tap(find.text('Créer une classe vierge'));
     await tester.pumpAndSettle();
 
-    // Nommer la première classe, puis lui associer une compétence.
+    // Ouvrir la classe, la nommer, puis lui associer une compétence.
+    await defilerJusqua(tester, find.text('Modifier'));
+    await tester.tap(find.text('Modifier'));
+    await tester.pumpAndSettle();
     final champClasse = find.widgetWithText(TextField, 'Classe 1');
     await defilerJusqua(tester, champClasse);
     await tester.enterText(champClasse, 'Gardien');
@@ -152,6 +163,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // De retour sur la fiche, le résumé reprend la classe et sa compétence.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('GARDIEN'), findsOneWidget);
+    expect(find.text('Frappe vigoureuse'), findsOneWidget);
+    expect(find.text('NC 0'), findsOneWidget);
+
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -160,6 +178,10 @@ void main() {
 
     // La compétence est bien rattachée à la classe.
     await tester.tap(find.text('Aria'));
+    await tester.pumpAndSettle();
+    final modifier = find.text('Modifier');
+    await defilerJusqua(tester, modifier);
+    await tester.tap(modifier);
     await tester.pumpAndSettle();
     final champCompetence = find.widgetWithText(TextField, 'Compétence 1');
     await defilerJusqua(tester, champCompetence);

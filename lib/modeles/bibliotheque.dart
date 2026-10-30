@@ -135,6 +135,21 @@ class Bibliotheque extends ChangeNotifier {
     sauvegarder();
   }
 
+  /// Ajoute une partie importée d'un fichier, sans jamais en écraser une :
+  /// si la même partie est déjà là, l'import en devient une copie.
+  Partie importerPartie(Partie importee) {
+    final dejaLa = _parties.any((p) => p.id == importee.id);
+    final partie = dejaLa
+        ? Partie.depuisJson({
+            ...importee.versJson(),
+            'id': DateTime.now().microsecondsSinceEpoch.toString(),
+          })
+        : importee;
+    _parties.add(partie);
+    sauvegarder();
+    return partie;
+  }
+
   /// Renomme une partie.
   void renommer(Partie partie, String nom) {
     final propre = nom.trim();
@@ -193,6 +208,25 @@ class Bibliotheque extends ChangeNotifier {
     _coulisses.add(classe);
     sauvegarderCoulisses();
     return classe;
+  }
+
+  /// Range dans les coulisses des classes importées d'un fichier. Une classe
+  /// déjà présente (même identifiant) est remplacée par sa version importée,
+  /// pour que les fiches qui s'en inspirent y restent liées ; les autres
+  /// sont ajoutées. Renvoie le nombre de classes remplacées.
+  int importerClasses(List<ModeleClasse> classes) {
+    var remplacees = 0;
+    for (final classe in classes) {
+      final index = _coulisses.indexWhere((c) => c.id == classe.id);
+      if (index == -1) {
+        _coulisses.add(classe);
+      } else {
+        _coulisses[index] = classe;
+        remplacees++;
+      }
+    }
+    sauvegarderCoulisses();
+    return remplacees;
   }
 
   /// Retire définitivement une classe des coulisses. Les fiches qui s'en

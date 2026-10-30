@@ -21,9 +21,7 @@ void main() {
   });
 
   test('une ancienne sauvegarde illisible est ignorée', () async {
-    SharedPreferences.setMockInitialValues({
-      'partie_en_cours': '<<<',
-    });
+    SharedPreferences.setMockInitialValues({'partie_en_cours': '<<<'});
 
     final bibliotheque = await Bibliotheque.charger();
 

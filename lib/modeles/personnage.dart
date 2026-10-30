@@ -20,15 +20,18 @@ enum Caracteristique {
 /// Dés utilisables pour les caractéristiques (échelle du jeu : d6 → d12).
 const List<int> desCaracteristiques = [6, 8, 10, 12];
 
-/// Une classe du personnage, ses compétences et ses sorts.
+/// Une classe du personnage, ses compétences, ses sorts et ses compétences
+/// héroïques.
 class Classe {
   Classe({
     this.nom = '',
     List<Competence>? competences,
     List<Sort>? sorts,
+    List<Competence>? competencesHeroiques,
     this.modeleId,
   }) : competences = competences ?? <Competence>[],
-       sorts = sorts ?? <Sort>[];
+       sorts = sorts ?? <Sort>[],
+       competencesHeroiques = competencesHeroiques ?? <Competence>[];
 
   /// Classe recopiée depuis les coulisses.
   factory Classe.depuisModele(ModeleClasse modele) =>
@@ -37,29 +40,61 @@ class Classe {
   String nom;
   List<Competence> competences;
 
-  /// Les sorts que le personnage a appris dans cette classe. Ils ne sont
-  /// jamais recopiés des coulisses : on les ajoute un par un.
+  /// Les sorts que le personnage a appris dans cette classe.
   List<Sort> sorts;
+
+  /// Les compétences héroïques, tenues à part des compétences ordinaires.
+  List<Competence> competencesHeroiques;
 
   /// Identifiant de la classe des coulisses d'où celle-ci a été reprise, s'il
   /// y en a une : c'est là qu'on va chercher les compétences à proposer.
   String? modeleId;
 
   /// Reprend une classe des coulisses : son nom, le lien vers le modèle, et
-  /// les compétences qui manquent encore — au NC zéro, puisque celui des
-  /// coulisses n'est qu'un plafond. Rien de ce qui est déjà écrit n'est
-  /// écrasé, et les sorts ne suivent pas.
+  /// les compétences, sorts et compétences héroïques qui manquent encore —
+  /// les compétences au NC zéro, puisque celui des coulisses n'est qu'un
+  /// plafond. Rien de ce qui est déjà écrit n'est écrasé.
   void reprendre(ModeleClasse modele) {
     nom = modele.nom;
     modeleId = modele.id;
-    final connues = competences
-        .map((c) => c.nom.trim().toLowerCase())
-        .where((nom) => nom.isNotEmpty)
-        .toSet();
-    for (final competence in modele.toutesCompetences) {
-      final nom = competence.nom.trim().toLowerCase();
-      if (nom.isEmpty || !connues.add(nom)) continue;
-      competences.add(competence.pourFiche());
+    _completer(
+      competences,
+      modele.competences,
+      nomDe: (c) => c.nom,
+      copier: (c) => c.pourFiche(),
+    );
+    _completer(
+      sorts,
+      modele.sorts,
+      nomDe: (s) => s.nom,
+      copier: (s) => Sort(nom: s.nom, description: s.description),
+      maximum: sortsMaximum,
+    );
+    _completer(
+      competencesHeroiques,
+      [modele.competenceHeroique],
+      nomDe: (c) => c.nom,
+      copier: (c) => c.pourFiche(),
+    );
+  }
+
+  /// Ajoute à [cible] une copie de chaque élément nommé de [source] qu'elle
+  /// n'a pas encore (même nom, sans tenir compte de la casse), sans
+  /// dépasser [maximum] s'il y en a un.
+  static void _completer<T>(
+    List<T> cible,
+    List<T> source, {
+    required String Function(T) nomDe,
+    required T Function(T) copier,
+    int? maximum,
+  }) {
+    String cle(T element) => nomDe(element).trim().toLowerCase();
+    final connus = cible.map(cle).where((nom) => nom.isNotEmpty).toSet();
+    for (final element in source) {
+      if (maximum != null && cible.length >= maximum) break;
+      final nom = cle(element);
+      if (nom.isEmpty || !connus.add(nom)) continue;
+      cible.add(copier(element));
     }
   }
 
@@ -67,6 +102,9 @@ class Classe {
     'nom': nom,
     'competences': competences.map((c) => c.versJson()).toList(),
     'sorts': sorts.map((s) => s.versJson()).toList(),
+    'competencesHeroiques': competencesHeroiques
+        .map((c) => c.versJson())
+        .toList(),
     'modeleId': modeleId,
   };
 
@@ -74,6 +112,9 @@ class Classe {
     nom: json['nom'] as String? ?? '',
     competences: Competence.listeDepuisJson(json['competences']),
     sorts: Sort.listeDepuisJson(json['sorts']),
+    competencesHeroiques: Competence.listeDepuisJson(
+      json['competencesHeroiques'],
+    ),
     modeleId: json['modeleId'] as String?,
   );
 }

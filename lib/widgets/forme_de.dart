@@ -91,7 +91,9 @@ class _PeintreDe extends CustomPainter {
         centre.dx + rayon * math.cos(angle),
         centre.dy + rayon * math.sin(angle),
       );
-      i == 0 ? chemin.moveTo(point.dx, point.dy) : chemin.lineTo(point.dx, point.dy);
+      i == 0
+          ? chemin.moveTo(point.dx, point.dy)
+          : chemin.lineTo(point.dx, point.dy);
     }
     chemin.close();
 

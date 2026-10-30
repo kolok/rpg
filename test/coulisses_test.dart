@@ -106,41 +106,79 @@ void main() {
     expect(modele.nom, 'Frappe vigoureuse');
   });
 
-  test('copier une classe reprend ses compétences, jamais ses sorts', () {
-    final modele = ModeleClasse.neuve()
-      ..nom = 'Gardien'
-      ..atouts = ['+5 PV maximum']
-      ..competences[0] = Competence(nom: 'Frappe vigoureuse', ncMax: 3)
-      ..sorts.add(Sort(nom: 'Bouclier'))
-      ..competenceHeroique = Competence(nom: 'Garde du rempart', ncMax: 1);
+  test(
+    'copier une classe reprend ses compétences, ses sorts et sa compétence héroïque',
+    () {
+      final modele = ModeleClasse.neuve()
+        ..nom = 'Gardien'
+        ..atouts = ['+5 PV maximum']
+        ..competences[0] = Competence(nom: 'Frappe vigoureuse', ncMax: 3)
+        ..sorts.addAll([
+          Sort(nom: 'Bouclier', description: 'Protège un allié.'),
+          Sort(),
+        ])
+        ..competenceHeroique = Competence(nom: 'Garde du rempart', ncMax: 1);
 
-    final classe = Classe.depuisModele(modele);
+      final classe = Classe.depuisModele(modele);
 
-    expect(classe.nom, 'Gardien');
-    expect(classe.modeleId, modele.id);
-    // Les compétences sans nom des coulisses ne remplissent pas la fiche ; la
-    // compétence héroïque, elle, suit comme une compétence ordinaire.
-    expect(classe.competences.map((c) => c.nom), [
-      'Frappe vigoureuse',
-      'Garde du rempart',
-    ]);
-    expect(classe.competences.map((c) => c.nc), [0, 0]);
-    expect(classe.competences.map((c) => c.ncMax), [3, 1]);
-    // Les sorts s'ajoutent à la main sur la fiche.
-    expect(classe.sorts, isEmpty);
+      expect(classe.nom, 'Gardien');
+      expect(classe.modeleId, modele.id);
+      // Les compétences sans nom des coulisses ne remplissent pas la fiche.
+      expect(classe.competences.map((c) => c.nom), ['Frappe vigoureuse']);
+      expect(classe.competences.single.nc, 0);
+      expect(classe.competences.single.ncMax, 3);
+      // Les sorts nommés suivent aussi, sans être liés à ceux des coulisses.
+      expect(classe.sorts.map((s) => s.nom), ['Bouclier']);
+      expect(classe.sorts.single.description, 'Protège un allié.');
+      classe.sorts.single.nom = 'Autre chose';
+      expect(modele.sorts.first.nom, 'Bouclier');
+
+      // La compétence héroïque a son propre bloc, au NC zéro elle aussi.
+      expect(classe.competencesHeroiques.map((c) => c.nom), [
+        'Garde du rempart',
+      ]);
+      expect(classe.competencesHeroiques.single.nc, 0);
+      expect(classe.competencesHeroiques.single.ncMax, 1);
+      classe.competencesHeroiques.single.nom = 'Autre chose';
+      expect(modele.competenceHeroique.nom, 'Garde du rempart');
+    },
+  );
+
+  test('une compétence héroïque sans nom n\'est pas recopiée', () {
+    final classe = Classe.depuisModele(ModeleClasse.neuve()..nom = 'Gardien');
+    expect(classe.competencesHeroiques, isEmpty);
   });
 
   test('recopier deux fois une classe ne double pas ses compétences', () {
     final modele = ModeleClasse.neuve()
       ..nom = 'Gardien'
-      ..competences[0] = Competence(nom: 'Frappe vigoureuse', ncMax: 3);
+      ..competences[0] = Competence(nom: 'Frappe vigoureuse', ncMax: 3)
+      ..sorts.add(Sort(nom: 'Bouclier'))
+      ..competenceHeroique = Competence(nom: 'Garde du rempart', ncMax: 1);
 
     final classe = Classe.depuisModele(modele);
     classe.competences.first.nc = 2;
+    classe.competencesHeroiques.first.nc = 1;
     classe.reprendre(modele);
 
     expect(classe.competences, hasLength(1));
+    expect(classe.sorts, hasLength(1));
+    expect(classe.competencesHeroiques, hasLength(1));
     // Ce que le personnage a acquis n'est pas écrasé.
     expect(classe.competences.first.nc, 2);
+    expect(classe.competencesHeroiques.first.nc, 1);
+  });
+
+  test('le résumé compte la compétence héroïque quand elle a un nom', () {
+    final classe = ModeleClasse.neuve()
+      ..competences[0] = Competence(nom: 'Frappe vigoureuse');
+    expect(classe.resume, '1\u00A0compétence');
+
+    classe.competenceHeroique = Competence(nom: 'Garde du rempart');
+    // Chaque morceau reste d'un seul tenant : seul le séparateur se coupe.
+    expect(
+      classe.resume,
+      '1\u00A0compétence · 1\u00A0compétence\u00A0héroïque',
+    );
   });
 }

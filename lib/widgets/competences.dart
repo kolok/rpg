@@ -86,11 +86,8 @@ class CarteCompetence extends StatelessWidget {
   }
 }
 
-/// Une compétence sur la fiche d'un personnage, en deux lignes : son nom,
-/// puis son niveau de compétence.
-///
-/// La description reste dans les coulisses : en pleine partie, seul le niveau
-/// se manipule.
+/// Une compétence sur la page d'une classe du personnage : son nom, sa
+/// description, puis son niveau de compétence.
 class LigneCompetenceFiche extends StatelessWidget {
   const LigneCompetenceFiche({
     super.key,
@@ -98,12 +95,17 @@ class LigneCompetenceFiche extends StatelessWidget {
     required this.libelle,
     required this.auChangement,
     required this.auSuppression,
+    this.maximumModifiable = false,
   });
 
   final Competence competence;
   final String libelle;
   final void Function(void Function()) auChangement;
   final VoidCallback auSuppression;
+
+  /// Vrai pour une classe vierge : sans coulisses pour fixer le plafond, on
+  /// le règle ici, à côté du NC.
+  final bool maximumModifiable;
 
   @override
   Widget build(BuildContext context) {
@@ -135,16 +137,58 @@ class LigneCompetenceFiche extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          // 2. Le niveau, borné par le plafond venu des coulisses. Sans
-          // plafond écrit là-bas, le compteur monte librement.
-          CompteurEntier(
-            libelle: 'NC',
-            compact: true,
-            valeur: competence.nc,
-            maximum: competence.ncMax > 0 ? competence.ncMax : null,
-            auChangement: (v) => auChangement(() => competence.nc = v),
+          const SizedBox(height: 8),
+          // 2. La description.
+          ChampTexte(
+            libelle: 'Description',
+            valeur: competence.description,
+            indication: 'Ce que fait la compétence…',
+            lignes: 2,
+            auChangement: (v) => auChangement(() => competence.description = v),
           ),
+          const SizedBox(height: 8),
+          // 3. Le niveau, borné par le plafond venu des coulisses. Sans
+          // plafond écrit là-bas, le compteur monte librement.
+          if (!maximumModifiable)
+            CompteurEntier(
+              libelle: 'NC',
+              compact: true,
+              valeur: competence.nc,
+              maximum: competence.ncMax > 0 ? competence.ncMax : null,
+              auChangement: (v) => auChangement(() => competence.nc = v),
+            )
+          // Sur une classe vierge, le plafond se règle à côté du NC, qui
+          // garde la plus grande part de la ligne.
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: CompteurEntier(
+                    libelle: 'NC',
+                    valeur: competence.nc,
+                    maximum: competence.ncMax > 0 ? competence.ncMax : null,
+                    rappelerMaximum: false,
+                    auChangement: (v) => auChangement(() => competence.nc = v),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: CompteurEntier(
+                    libelle: 'NC max',
+                    valeur: competence.ncMax,
+                    couleur: theme.colorScheme.onSurfaceVariant,
+                    auChangement: (v) => auChangement(() {
+                      competence.ncMax = v;
+                      // Un plafond abaissé ramène le NC avec lui.
+                      if (v > 0 && competence.nc > v) competence.nc = v;
+                    }),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

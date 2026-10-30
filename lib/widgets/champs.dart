@@ -8,12 +8,16 @@ class SectionFiche extends StatelessWidget {
     required this.icone,
     required this.enfant,
     this.action,
+    this.compacte = false,
   });
 
   final String titre;
   final IconData icone;
   final Widget enfant;
   final Widget? action;
+
+  /// Marges resserrées, pour les résumés qui doivent tenir peu de place.
+  final bool compacte;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +29,10 @@ class SectionFiche extends StatelessWidget {
           Container(
             width: double.infinity,
             color: theme.colorScheme.surfaceContainerHighest,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: compacte ? 12 : 16,
+              vertical: compacte ? 2 : 10,
+            ),
             child: Row(
               children: [
                 Icon(icone, size: 18, color: theme.colorScheme.primary),
@@ -44,7 +51,12 @@ class SectionFiche extends StatelessWidget {
               ],
             ),
           ),
-          Padding(padding: const EdgeInsets.all(16), child: enfant),
+          Padding(
+            padding: compacte
+                ? const EdgeInsets.fromLTRB(12, 6, 12, 6)
+                : const EdgeInsets.all(16),
+            child: enfant,
+          ),
         ],
       ),
     );
@@ -118,6 +130,7 @@ class CompteurEntier extends StatefulWidget {
     this.couleur,
     this.icone,
     this.compact = false,
+    this.rappelerMaximum = true,
   });
 
   final String libelle;
@@ -139,6 +152,10 @@ class CompteurEntier extends StatefulWidget {
   /// Sur une seule ligne, le libellé à gauche du compteur : c'est la forme
   /// utilisée par le NC des compétences sur la fiche de personnage.
   final bool compact;
+
+  /// Faux quand le plafond se règle juste à côté : inutile de l'écrire deux
+  /// fois.
+  final bool rappelerMaximum;
 
   bool _tropPetit(int valeur) => minimum != null && valeur < minimum!;
 
@@ -269,7 +286,7 @@ class _CompteurEntierState extends State<CompteurEntier> {
           icon: const Icon(Icons.add, size: 18),
         ),
         // Le plafond se lit à la suite du compteur : « 2 / 5 ».
-        if (widget.maximum != null) ...[
+        if (widget.maximum != null && widget.rappelerMaximum) ...[
           const SizedBox(width: 6),
           Text(
             '/ ${widget.maximum}',

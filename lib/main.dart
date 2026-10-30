@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'ecrans/accueil.dart';
 import 'modeles/bibliotheque.dart';
 import 'theme.dart';
+import 'widgets/reception_fichiers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +25,7 @@ class ApplicationRpg extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: themeClair(),
         darkTheme: themeSombre(),
-        home: const EcranAccueil(),
+        home: const ReceptionFichiers(child: EcranAccueil()),
       ),
     );
   }

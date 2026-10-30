@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rpg/main.dart';
 import 'package:rpg/modeles/bibliotheque.dart';
+import 'package:rpg/widgets/champs.dart';
 import 'package:rpg/widgets/competences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,6 +67,9 @@ void main() {
     await tester.tap(ajouter);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Créer une classe vierge'));
+    await tester.pumpAndSettle();
+    await defilerJusqua(tester, find.text('Modifier'));
+    await tester.tap(find.text('Modifier'));
     await tester.pumpAndSettle();
   }
 
@@ -205,16 +209,24 @@ void main() {
     expect(classe.competences.first.nom, 'Frappe vigoureuse');
     expect(classe.competences.first.nc, 0);
     expect(classe.competences.first.ncMax, 3);
-    // Les sorts, eux, ne suivent pas.
+    // La classe des coulisses n'a pas de sort : la fiche non plus.
     expect(classe.sorts, isEmpty);
 
-    // Sur la fiche, la compétence tient en deux lignes : son nom, puis son
-    // niveau borné par le plafond des coulisses. Pas de description.
+    // Sur la fiche, le résumé montre la compétence et son NC sur le plafond,
+    // sans rien à modifier.
+    final resume = find.text('NC 0 / 3');
+    await defilerJusqua(tester, resume);
+    expect(find.byType(LigneCompetenceFiche), findsNothing);
+
+    // La page de la classe donne la description et le niveau, borné par le
+    // plafond des coulisses.
+    await defilerJusqua(tester, find.text('Modifier'));
+    await tester.tap(find.text('Modifier'));
+    await tester.pumpAndSettle();
     final ligne = find.byType(LigneCompetenceFiche);
-    await defilerJusqua(tester, ligne);
     expect(
       find.descendant(of: ligne, matching: find.text('Description')),
-      findsNothing,
+      findsOneWidget,
     );
     expect(
       find.descendant(of: ligne, matching: find.text('NC')),
@@ -223,6 +235,11 @@ void main() {
     expect(
       find.descendant(of: ligne, matching: find.text('/ 3')),
       findsOneWidget,
+    );
+    // Le plafond vient des coulisses : il ne se règle pas sur la fiche.
+    expect(
+      find.descendant(of: ligne, matching: find.text('NC max')),
+      findsNothing,
     );
   });
 
@@ -245,5 +262,101 @@ void main() {
 
     final classe = bibliotheque.courante!.personnages.first.classes.single;
     expect(classe.sorts.single.nom, 'Bouclier');
+  });
+
+  testWidgets('le résumé de la classe montre sorts et compétence héroïque', (
+    tester,
+  ) async {
+    await demarrerApplication(tester);
+    await ouvrirPremiereFiche(tester);
+
+    final ajouterSort = find.text('Ajouter un sort');
+    await defilerJusqua(tester, ajouterSort);
+    await tester.tap(ajouterSort);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Sort 1'),
+      'Bouclier',
+    );
+    await tester.tap(ajouterSort);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Sort 2'), 'Soin');
+
+    final ajouterHeroique = find.text('Ajouter une compétence héroïque');
+    await defilerJusqua(tester, ajouterHeroique);
+    await tester.tap(ajouterHeroique);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Compétence héroïque 1'),
+      'Garde du rempart',
+    );
+    await tester.pumpAndSettle();
+
+    // De retour sur la fiche, le résumé tient les sorts sur une ligne et la
+    // compétence héroïque avec son NC.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await defilerJusqua(tester, find.text('Bouclier · Soin'));
+    expect(find.text('Garde du rempart'), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
+  });
+
+  testWidgets('une classe vierge règle le plafond de ses compétences', (
+    tester,
+  ) async {
+    final bibliotheque = await demarrerApplication(tester);
+    await ouvrirPremiereFiche(tester);
+
+    final ajouter = find.text('Ajouter une compétence');
+    await defilerJusqua(tester, ajouter);
+    await tester.tap(ajouter);
+    await tester.pumpAndSettle();
+
+    final ligne = find.byType(LigneCompetenceFiche);
+    final nc = find.ancestor(
+      of: find.descendant(of: ligne, matching: find.text('NC')),
+      matching: find.byType(CompteurEntier),
+    );
+    final max = find.ancestor(
+      of: find.descendant(of: ligne, matching: find.text('NC max')),
+      matching: find.byType(CompteurEntier),
+    );
+    // Le NC prend plus de place que son plafond.
+    expect(tester.getSize(nc).width, greaterThan(tester.getSize(max).width));
+
+    Finder plus(Finder compteur) =>
+        find.descendant(of: compteur, matching: find.byIcon(Icons.add));
+    Finder moins(Finder compteur) =>
+        find.descendant(of: compteur, matching: find.byIcon(Icons.remove));
+
+    await defilerJusqua(tester, plus(max));
+    await tester.tap(plus(max));
+    await tester.pumpAndSettle();
+    await tester.tap(plus(max));
+    await tester.pumpAndSettle();
+    await tester.tap(plus(nc));
+    await tester.pumpAndSettle();
+    await tester.tap(plus(nc));
+    await tester.pumpAndSettle();
+
+    final competence = bibliotheque
+        .courante!
+        .personnages
+        .first
+        .classes
+        .single
+        .competences
+        .single;
+    expect(competence.ncMax, 2);
+    expect(competence.nc, 2);
+
+    // Au plafond, le NC ne monte plus ; abaisser le plafond le ramène.
+    await tester.tap(plus(nc));
+    await tester.pumpAndSettle();
+    expect(competence.nc, 2);
+    await tester.tap(moins(max));
+    await tester.pumpAndSettle();
+    expect(competence.ncMax, 1);
+    expect(competence.nc, 1);
   });
 }

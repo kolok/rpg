@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../modeles/bibliotheque.dart';
+import '../modeles/echange.dart';
+import '../modeles/fichiers.dart';
 import '../modeles/partie.dart';
+import '../widgets/export.dart';
+import '../widgets/import.dart';
 import 'coulisses.dart';
 import 'partie_en_cours.dart';
 
@@ -38,6 +42,23 @@ class EcranAccueil extends StatelessWidget {
     final nom = await demanderNomPartie(context, nomActuel: partie.nom);
     if (nom == null) return;
     bibliotheque.renommer(partie, nom);
+  }
+
+  /// Enregistre ou partage une partie, avec toutes ses fiches, dans un
+  /// fichier JSON.
+  Future<void> _exporter(BuildContext context, Partie partie) =>
+      exporterFichier(
+        context,
+        nom: Echange.nomDeFichier(partie.nom),
+        octets: Echange.exporterPartie(partie),
+        confirmation: '« ${partie.nom} » exportée.',
+      );
+
+  /// Ajoute aux parties enregistrées celle d'un fichier JSON choisi.
+  Future<void> _importer(BuildContext context) async {
+    final octets = await Fichiers.actuel.ouvrir();
+    if (octets == null || !context.mounted) return;
+    await importerPartieDuFichier(context, octets);
   }
 
   Future<void> _supprimer(BuildContext context, Partie partie) async {
@@ -166,6 +187,7 @@ class EcranAccueil extends StatelessWidget {
                           partie: partie,
                           auClic: () => _reprendre(context, partie),
                           auRenommage: () => _renommer(context, partie),
+                          auxExport: () => _exporter(context, partie),
                           auxSuppression: () => _supprimer(context, partie),
                         ),
                         const SizedBox(height: 10),
@@ -193,6 +215,12 @@ class EcranAccueil extends StatelessWidget {
                       icon: const Icon(Icons.workspace_premium),
                       label: const Text('Coulisses'),
                     ),
+                    const SizedBox(height: 4),
+                    TextButton.icon(
+                      onPressed: () => _importer(context),
+                      icon: const Icon(Icons.download),
+                      label: const Text('Importer une partie'),
+                    ),
                   ],
                 ),
               ),
@@ -210,12 +238,14 @@ class _CartePartie extends StatelessWidget {
     required this.partie,
     required this.auClic,
     required this.auRenommage,
+    required this.auxExport,
     required this.auxSuppression,
   });
 
   final Partie partie;
   final VoidCallback auClic;
   final VoidCallback auRenommage;
+  final VoidCallback auxExport;
   final VoidCallback auxSuppression;
 
   @override
@@ -243,6 +273,7 @@ class _CartePartie extends StatelessWidget {
           tooltip: 'Options de la partie',
           onSelected: (choix) {
             if (choix == 'renommer') auRenommage();
+            if (choix == 'exporter') auxExport();
             if (choix == 'supprimer') auxSuppression();
           },
           itemBuilder: (_) => const [
@@ -251,6 +282,13 @@ class _CartePartie extends StatelessWidget {
               child: ListTile(
                 leading: Icon(Icons.edit),
                 title: Text('Renommer'),
+              ),
+            ),
+            PopupMenuItem(
+              value: 'exporter',
+              child: ListTile(
+                leading: Icon(Icons.upload_file),
+                title: Text('Exporter'),
               ),
             ),
             PopupMenuItem(

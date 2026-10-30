@@ -34,6 +34,9 @@ void main() {
             ),
           ],
           sorts: [Sort(nom: 'Bouclier', description: 'Protège un allié.')],
+          competencesHeroiques: [
+            Competence(nom: 'Garde du rempart', nc: 1, ncMax: 1),
+          ],
         ),
         Classe(
           nom: 'Élémentaliste',
@@ -96,6 +99,13 @@ void main() {
     expect(copie.classes[0].sorts.single.nom, 'Bouclier');
     expect(copie.classes[0].sorts.single.description, 'Protège un allié.');
     expect(copie.classes[1].sorts, isEmpty);
+    // Et les compétences héroïques, avec leur NC.
+    expect(
+      copie.classes[0].competencesHeroiques.single.nom,
+      'Garde du rempart',
+    );
+    expect(copie.classes[0].competencesHeroiques.single.nc, 1);
+    expect(copie.classes[1].competencesHeroiques, isEmpty);
     expect(copie.classes[1].nom, 'Élémentaliste');
     expect(copie.classes[1].competences.map((c) => c.nom), [
       'Boule de feu',

@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../modeles/bibliotheque.dart';
 import '../modeles/competence.dart';
-import '../modeles/modele_classe.dart';
 import '../modeles/personnage.dart';
 import '../widgets/champs.dart';
-import '../widgets/competences.dart';
 import 'coulisses.dart';
 import 'des.dart';
+import 'edition_classe.dart';
 
 /// Écran 3 — fiche détaillée d'un personnage, entièrement modifiable
 /// pendant la partie.
@@ -50,7 +49,7 @@ class EcranFichePersonnage extends StatelessWidget {
               leading: const Icon(Icons.workspace_premium),
               title: const Text('Copier une classe des coulisses'),
               subtitle: const Text(
-                'Son nom et ses compétences, chacune au NC 0.',
+                'Son nom, ses compétences, ses sorts et sa compétence héroïque.',
               ),
               onTap: () => Navigator.of(context).pop(true),
             ),
@@ -264,8 +263,9 @@ class EcranFichePersonnage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 8. Les classes du personnage, avec leurs compétences. Une fiche
-          // neuve n'en a aucune : le message dit où commencer.
+          // 8. Les classes du personnage, résumées à leur nom et à leurs
+          // compétences. Une fiche neuve n'en a aucune : le message dit où
+          // commencer.
           if (personnage.classes.isEmpty) ...[
             SectionFiche(
               titre: 'Classes',
@@ -281,15 +281,13 @@ class EcranFichePersonnage extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           for (var i = 0; i < personnage.classes.length; i++) ...[
-            _CarteClasse(
+            _ResumeClasse(
               key: ValueKey('classe-$i-${personnage.classes.length}'),
+              personnage: personnage,
               classe: personnage.classes[i],
               numero: i + 1,
-              auChangement: modifier,
-              auSuppression: () =>
-                  modifier(() => personnage.classes.removeAt(i)),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
           OutlinedButton.icon(
             onPressed: () => _ajouterClasse(context),
@@ -359,117 +357,115 @@ class EcranFichePersonnage extends StatelessWidget {
   }
 }
 
-/// Une classe du personnage et les compétences qui lui sont associées.
-class _CarteClasse extends StatelessWidget {
-  const _CarteClasse({
+/// Résumé d'une classe du personnage, en lecture seule et aussi serré que
+/// possible : ses compétences avec leur NC, ses sorts sur une ligne, puis ses
+/// compétences héroïques. Le bouton « Modifier » ouvre la page plein écran où
+/// tout se change.
+class _ResumeClasse extends StatelessWidget {
+  const _ResumeClasse({
     super.key,
+    required this.personnage,
     required this.classe,
     required this.numero,
-    required this.auChangement,
-    required this.auSuppression,
   });
 
+  final Personnage personnage;
   final Classe classe;
   final int numero;
-  final void Function(void Function()) auChangement;
-  final VoidCallback auSuppression;
-
-  /// Texte en retrait, pour les rubriques encore vides.
-  Widget _messageVide(ThemeData theme, String texte) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Text(
-      texte,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-        fontStyle: FontStyle.italic,
-      ),
-    ),
-  );
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Trait discret entre deux compétences, pour qu'on les distingue d'un
-    // coup d'œil sans alourdir la fiche.
-    final separateur = Divider(
-      height: 1,
-      thickness: 0.5,
-      color: theme.colorScheme.outlineVariant,
+    final normal = theme.textTheme.bodyMedium;
+    final discret = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontStyle: FontStyle.italic,
     );
+
+    // Une compétence sur une ligne : son nom, puis son NC rapporté au
+    // plafond des coulisses s'il y en a un.
+    Widget ligneCompetence(Competence competence, {IconData? icone}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          if (icone != null) ...[
+            Icon(icone, size: 14, color: theme.colorScheme.tertiary),
+            const SizedBox(width: 4),
+          ],
+          Expanded(
+            child: competence.nom.trim().isEmpty
+                ? Text('Compétence sans nom', style: discret)
+                : Text(competence.nom.trim(), style: normal),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            competence.ncMax > 0
+                ? 'NC ${competence.nc} / ${competence.ncMax}'
+                : 'NC ${competence.nc}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final sorts = [
+      for (final sort in classe.sorts)
+        sort.nom.trim().isEmpty ? 'Sort sans nom' : sort.nom.trim(),
+    ];
+    final vide =
+        classe.competences.isEmpty &&
+        sorts.isEmpty &&
+        classe.competencesHeroiques.isEmpty;
 
     return SectionFiche(
       titre: classe.nom.trim().isEmpty ? 'Classe $numero' : classe.nom,
       icone: Icons.workspace_premium,
-      action: IconButton(
-        tooltip: 'Supprimer cette classe',
-        visualDensity: VisualDensity.compact,
-        onPressed: auSuppression,
-        icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+      compacte: true,
+      action: TextButton.icon(
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                EcranEditionClasse(personnage: personnage, classe: classe),
+          ),
+        ),
+        icon: const Icon(Icons.edit, size: 16),
+        label: const Text('Modifier'),
       ),
       enfant: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ChampTexte(
-            libelle: 'Classe $numero',
-            valeur: classe.nom,
-            indication: 'Ex. : Gardien, Élémentaliste…',
-            auChangement: (v) => auChangement(() => classe.nom = v),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Compétences de cette classe',
-            style: theme.textTheme.labelMedium,
-          ),
-          const SizedBox(height: 4),
-          if (classe.competences.isEmpty)
-            _messageVide(theme, 'Aucune compétence pour cette classe.'),
-          for (var i = 0; i < classe.competences.length; i++) ...[
-            if (i > 0) separateur,
-            LigneCompetenceFiche(
-              // La clé lie la ligne à sa position dans la liste.
-              key: ValueKey('competence-$i-${classe.competences.length}'),
-              competence: classe.competences[i],
-              libelle: 'Compétence ${i + 1}',
-              auChangement: auChangement,
-              auSuppression: () =>
-                  auChangement(() => classe.competences.removeAt(i)),
+          if (vide)
+            Text('Rien dans cette classe pour l\'instant.', style: discret),
+          for (final competence in classe.competences)
+            ligneCompetence(competence),
+          if (sorts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(child: Text(sorts.join(' · '), style: normal)),
+                ],
+              ),
             ),
-          ],
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () =>
-                  auChangement(() => classe.competences.add(Competence())),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Ajouter une compétence'),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Les sorts ne suivent jamais la classe recopiée : le personnage
-          // n'apprend que ceux qu'on lui ajoute ici.
-          Text('Sorts de cette classe', style: theme.textTheme.labelMedium),
-          const SizedBox(height: 8),
-          if (classe.sorts.isEmpty)
-            _messageVide(theme, 'Aucun sort appris dans cette classe.'),
-          for (var i = 0; i < classe.sorts.length; i++)
-            CarteSort(
-              key: ValueKey('sort-$i-${classe.sorts.length}'),
-              sort: classe.sorts[i],
-              libelle: 'Sort ${i + 1}',
-              auChangement: auChangement,
-              auSuppression: () => auChangement(() => classe.sorts.removeAt(i)),
-            ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              // Comme dans les coulisses, dix sorts au plus par classe.
-              onPressed: classe.sorts.length >= sortsMaximum
-                  ? null
-                  : () => auChangement(() => classe.sorts.add(Sort())),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Ajouter un sort'),
-            ),
-          ),
+          for (final competence in classe.competencesHeroiques)
+            ligneCompetence(competence, icone: Icons.local_fire_department),
         ],
       ),
     );
